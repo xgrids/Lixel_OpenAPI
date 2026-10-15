@@ -1,7 +1,7 @@
 # Ubuntu/Linux runtime and packaging dependencies (GUI uses PySide2 for compatibility with older systems)
 PySide2>=5.15.0
 paho-mqtt>=2.0.0
-protobuf>=4.21.0
+protobuf>=5.26.0
 grpcio-tools>=1.50.0
 nuitka
 ordered-set
