@@ -35,7 +35,7 @@ Extra parameters of `modeling.py`:
 | `--start-timeout` | max seconds to wait for the device to start scanning | 90 |
 | `--stop-timeout` | max seconds to wait for the device to return to standby | 180 |
 
-Exit codes of `modeling.py`: `0` success, `1` timeout while starting or stopping, `2` the device was not in standby, `3` the device rejected `AC_START`. Starting takes several seconds (the device goes standby -> starting -> scanning) and stopping takes tens of seconds, so a full run lasts more than a minute.
+Exit codes of `modeling.py`: `0` success, `1` timeout while starting or stopping, `2` the device was not in standby, `3` the device rejected `AC_START`, `4` no response to `AC_START` or `AC_STOP`, `130` interrupted with Ctrl-C (`AC_STOP` is still sent). Starting takes several seconds (the device goes standby -> starting -> scanning) and stopping takes tens of seconds, so a full run lasts more than a minute.
 
 ## Script overview
 
