@@ -155,6 +155,7 @@ bash example/i18n/build_i18n.sh release   # 编译 .ts -> .qm
 - `docs/lixel_openapi_developer_guide_en.md` —— 开发者指南（英文）
 - `docs/lixel_openapi_developer_guide_zh.md` —— 开发者指南（中文）
 - `docs/lixel_openapi_protocol_reference_en.md` —— 协议参考（英文）
+- `docs/lixel_openapi_protocol_reference_zh.md` —— 协议参考（中文）
 
 ## 版权
 

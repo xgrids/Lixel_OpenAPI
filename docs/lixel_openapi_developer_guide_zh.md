@@ -177,7 +177,8 @@ template = codec.default_json("ModelingRequest")
 实时点云 `MqttCompressMsg` 需二次解压解码：
 
 1. 反序列化 `MqttCompressMsg`，得 `compression`（Lz4/Zstd）与 `compressed_data`
-2. 按压缩类型解压 `compressed_data`
+2. 按压缩类型解压 `compressed_data`。Lz4 为 LZ4 block 格式（不是 LZ4 frame 格式），
+   解压需要原始长度，即 `compressed_size`（压缩前的数据大小）
 3. 将解压结果按 `LioPclReport` 反序列化得到点云数组
 
 ### 4.2 设备管理
@@ -441,6 +442,8 @@ example/i18n/openapi_<lang>.qm
 
 **Q：点云解码失败？**
 安装解压依赖 `pip install lz4 zstandard`，并确认设备处于扫描状态才有点云上报。
+Lz4 数据是 LZ4 block 格式，需用 `lz4.block.decompress(data, uncompressed_size=compressed_size)`；
+用 `lz4.frame` 解压会报 `ERROR_frameType_unknown`。
 
 **Q：枚举字段怎么填？**
 可用枚举名字符串（推荐，如 `"AC_START"`）或整数值。

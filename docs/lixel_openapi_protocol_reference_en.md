@@ -428,6 +428,8 @@ message MqttCompressMsg {
 ```
 
 > ⚠️ To reduce the size of transmitted data, point cloud data is compressed using LZ4.
+> The format is a raw LZ4 block (not the LZ4 frame format); decompression needs the
+> original size, which is `compressed_size` (the size before compression).
 
 ### 4.2 Real-time Pose Upload
 

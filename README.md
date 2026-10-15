@@ -159,6 +159,7 @@ bash example/i18n/build_i18n.sh release   # compile .ts -> .qm
 - `docs/lixel_openapi_developer_guide_en.md` — developer guide (English)
 - `docs/lixel_openapi_developer_guide_zh.md` — developer guide (Chinese)
 - `docs/lixel_openapi_protocol_reference_en.md` — protocol reference (English)
+- `docs/lixel_openapi_protocol_reference_zh.md` — protocol reference (Chinese)
 
 ## License
 

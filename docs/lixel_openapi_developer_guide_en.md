@@ -188,7 +188,9 @@ The heartbeat payload is JSON text, e.g.:
 The realtime point cloud `MqttCompressMsg` needs a second decompress/decode:
 
 1. Deserialize `MqttCompressMsg` to get `compression` (Lz4/Zstd) and `compressed_data`
-2. Decompress `compressed_data` according to the compression type
+2. Decompress `compressed_data` according to the compression type. Lz4 data is a raw
+   LZ4 block (not the LZ4 frame format) and needs the original size, which is
+   `compressed_size` (the size before compression)
 3. Deserialize the result as `LioPclReport` to obtain the point array
 
 ### 4.2 Device Management
@@ -478,6 +480,9 @@ default to avoid C-extension incompatibilities.
 **Q: Point cloud decode fails?**
 Install the decompression deps `pip install lz4 zstandard`, and make sure the
 device is scanning so that point clouds are reported.
+Lz4 data is a raw LZ4 block; decompress it with
+`lz4.block.decompress(data, uncompressed_size=compressed_size)`. Using `lz4.frame`
+fails with `ERROR_frameType_unknown`.
 
 **Q: How to fill enum fields?**
 Use the enum name string (recommended, e.g. `"AC_START"`) or the integer value.
