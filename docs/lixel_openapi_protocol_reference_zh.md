@@ -458,7 +458,7 @@ Lixel 设备内置 RTSP 服务器。当设备成功开始扫描后，会实时�
 | 参数 | 说明 |
 |-----------|-------------|
 | `lixel_device_ipaddr` | Lixel 设备的 IP 地址：有线连接固定为 `192.168.55.1`；无线连接需通过蓝牙获取 Wi-Fi 地址；快连（闪连）模式下固定为 `192.168.56.1` |
-| `camera_name` | 相机名称。须通过 MQTT 发送设备信息请求（`DeviceInfoRequest`）获取：`DeviceInfoResponse.camera_info.camera_list` |
+| `camera_name` | 相机名称。须通过 MQTT 发送设备信息请求（`DeviceInfoRequest`）获取：`DeviceInfoResponse.device_info.camera_info.camera_list`。列表中可能含空字符串（例如 `["left", "", "right"]`），表示该槽位没有相机，拼接地址时须跳过 |
 
 ## 6. 云控功能（MQTT）
 
@@ -473,6 +473,10 @@ Lixel 设备内置 RTSP 服务器。当设备成功开始扫描后，会实时�
 | 服务地址 | `smb://<device_ip>/share` | `device_ip` 与 MQTT 连接地址一致 |
 | 用户名 | `admin` | 默认，不可修改 |
 | 密码 | `admin123` | 默认，不可修改 |
+
+### HTTP 访问
+
+除 Samba 外，`ProjectListResponse` 的 `ProjectInfo.*_url` 与 `ModelingStatusResponse.*_url` 返回的是 HTTP 地址，形如 `http://<host>/static/<工程目录>/…`。在 Lixel L2Pro（固件 V3.2.1）上实测，返回的 `<host>` 为 `192.168.56.1`，有线连接下该地址不可达；将主机替换为 `192.168.55.1` 后可访问。客户端应使用与 MQTT 连接相同的地址替换 URL 中的主机部分。
 
 ## 8. 错误码定义
 

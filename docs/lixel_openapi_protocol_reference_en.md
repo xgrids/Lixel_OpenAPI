@@ -459,7 +459,7 @@ The Lixel device has a built-in RTSP server. When the device successfully starts
 | Parameter | Description |
 |-----------|-------------|
 | `lixel_device_ipaddr` | IP address of the Lixel device: fixed at `192.168.55.1` for wired connection; use Bluetooth to obtain the Wi-Fi address for wireless connection; fixed at `192.168.56.1` in flash (Quick Connect) mode |
-| `camera_name` | Camera name. Must be obtained by sending a device information request (`DeviceInfoRequest`) via MQTT: `DeviceInfoResponse.camera_info.camera_list` |
+| `camera_name` | Camera name. Must be obtained by sending a device information request (`DeviceInfoRequest`) via MQTT: `DeviceInfoResponse.device_info.camera_info.camera_list`. The list may contain empty strings (for example `["left", "", "right"]`), which mean the slot has no camera and must be skipped when building the address |
 
 ## 6. Cloud Control Function (MQTT)
 
@@ -474,6 +474,10 @@ The file access feature (Samba) is disabled by default. It must be enabled throu
 | Service Address | `smb://<device_ip>/share` | `device_ip` matches the MQTT connection address |
 | Username | `admin` | Default, unmodifiable |
 | Password | `admin123` | Default, unmodifiable |
+
+### HTTP access
+
+Besides Samba, the URLs returned in `ProjectInfo.*_url` (`ProjectListResponse`) and `ModelingStatusResponse.*_url` are HTTP addresses of the form `http://<host>/static/<project directory>/...`. On a Lixel L2Pro (firmware V3.2.1) the returned `<host>` was measured as `192.168.56.1`, which is not reachable over the wired connection; replacing the host with `192.168.55.1` works. Clients should replace the host part of the URL with the address used for the MQTT connection.
 
 ## 8. Error Code Definition
 
