@@ -163,8 +163,8 @@
         <translation>设备状态信息，1Hz 周期上报，含建图状态、系统资源、RTK 状态等。</translation>
     </message>
     <message>
-        <source>modeling_state is a unified status code, e.g. EC_ScanReady=0x32040000+300.</source>
-        <translation>modeling_state 为统一状态码，如 EC_ScanReady=0x32040000+300。</translation>
+        <source>modeling_state is a unified status code, e.g. EC_ScanReady=0x12040000+300.</source>
+        <translation>modeling_state 为统一状态码，如 EC_ScanReady=0x12040000+300。</translation>
     </message>
     <message>
         <source>Realtime pose report</source>

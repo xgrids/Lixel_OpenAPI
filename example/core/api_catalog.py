@@ -104,7 +104,7 @@ INTERFACES: list[ApiInterface] = [
                     "system resources, RTK status, etc.",
         report=_rpt("lixel/application/report/device_status", "DeviceStatusReport"),
         notes="modeling_state is a unified status code, e.g. "
-              "EC_ScanReady=0x32040000+300.",
+              "EC_ScanReady=0x12040000+300.",
     ),
     ApiInterface(
         key="lio_pose",

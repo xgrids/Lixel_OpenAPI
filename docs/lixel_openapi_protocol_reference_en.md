@@ -790,12 +790,12 @@ message RtkStatus {
  * notes:
  * Device status info (report frequency 1Hz)
  * Possible values of modeling_state:
-    EC_UnknownState = 0x32040000,       // unknown state (0x32040000)
-    EC_ScanReady = 0x32040000+300,      // standby (0x32040000+300)
-    EC_ScanStarting,                    // starting scan (0x32040000+301)
-    EC_ScanModeling,                    // scanning (0x32040000+302)
-    EC_ScanStopping,                    // stopping scan (0x32040000+303)
-    EC_ScanStopped,                     // scan finished (0x32040000+304)
+    EC_UnknownState = 0x12040000,       // unknown state (0x12040000)
+    EC_ScanReady = 0x12040000+300,      // standby (0x12040000+300)
+    EC_ScanStarting,                    // starting scan (0x12040000+301)
+    EC_ScanModeling,                    // scanning (0x12040000+302)
+    EC_ScanStopping,                    // stopping scan (0x12040000+303)
+    EC_ScanStopped,                     // scan finished (0x12040000+304)
     EC_ScanMappingAbort=0x22040000+317, // mapping aborted, record only (0x22040000+317)
     EC_ScanNotAllowedInUsbMass,         // scanning forbidden in USB mass mode (0x22040000+318)
     EC_ScanProjectTransferring,         // scanning forbidden during project transfer (0x22040000+319)
