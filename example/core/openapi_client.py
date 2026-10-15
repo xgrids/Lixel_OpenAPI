@@ -28,6 +28,7 @@ Design notes:
 """
 from __future__ import annotations
 
+import logging
 import queue
 import ssl
 import threading
@@ -38,6 +39,8 @@ from dataclasses import dataclass, field
 import paho.mqtt.client as mqtt
 
 from .proto_codec import ProtoCodec
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -311,7 +314,9 @@ class OpenApiClient:
                     data = msg.payload
                 cb(topic, data)
             except Exception:
-                # A callback exception does not affect other subscriptions
+                # A callback exception does not affect other subscriptions, but it is
+                # logged so that decoding/handler errors are not silently lost
+                logger.exception("subscription callback failed for topic %s", topic)
                 continue
         # Dispatch to raw subscription callbacks (matched by wildcard, always passing bytes)
         for topic_filter, cbs in raw_items:
@@ -321,6 +326,7 @@ class OpenApiClient:
                 try:
                     cb(topic, msg.payload)
                 except Exception:
+                    logger.exception("raw subscription callback failed for topic %s", topic)
                     continue
 
     @staticmethod
