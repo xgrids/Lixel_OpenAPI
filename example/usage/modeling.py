@@ -30,12 +30,14 @@ EC_SCAN_READY = _BASE + 300      # standby
 EC_SCAN_STARTING = _BASE + 301   # starting scan
 EC_SCAN_MODELING = _BASE + 302   # scanning
 EC_SCAN_STOPPING = _BASE + 303   # stopping scan
+EC_SCAN_STOPPED = _BASE + 304    # scan finished
 
 _NAMES = {
     EC_SCAN_READY: "standby",
     EC_SCAN_STARTING: "starting",
     EC_SCAN_MODELING: "scanning",
     EC_SCAN_STOPPING: "stopping",
+    EC_SCAN_STOPPED: "stopped",
 }
 
 
