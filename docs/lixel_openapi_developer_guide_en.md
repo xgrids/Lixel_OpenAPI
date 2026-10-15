@@ -226,7 +226,7 @@ Scan `action` supports `AC_START` / `AC_STOP`. Key `ModelingRequest` fields:
 
 Control point `action` supports `AC_ADD` / `AC_REMOVE`. `AC_UPDATE` is defined in the proto, but the device does not handle it
 and returns `EC_ProtoError` (`desc` is `invalid action`).
-Control point requests are only answered while scanning; in standby the device does not reply. `AC_ADD` ignores the `id` in the
+In standby the device does not reply to control point requests. `AC_ADD` ignores the `id` in the
 request; the `id` in the response is chosen by the device and must be used to remove the point. On success the `error.desc` of
 `AC_ADD` is the pose of the point (7 floating point numbers separated by spaces), not a text description.
 measure point `action` supports `AC_ADD` / `AC_REMOVE` only.
@@ -427,10 +427,10 @@ python modeling.py --project demo --watch 5 --key <your OpenAPI Key>
 python heartbeat.py --seconds 15
 ```
 
-Common arguments: `--host/--port/--tls/--username/--password/--key/--timeout`. The device
-only answers requests that carry a valid OpenAPI Key, so always pass `--key`.
+Common arguments: `--host/--port/--tls/--username/--password/--key/--timeout`. Requests
+without a valid OpenAPI Key are rejected with `EC_ProtoError` (`openapi auth error`), so always pass `--key`.
 `modeling.py` waits until the device is really scanning before it starts counting `--watch`,
-and waits for standby after stopping, so a run lasts more than a minute.
+and waits for standby after stopping, so a run takes a minute or more (71 s was measured with `--watch 10` on a Lixel L2Pro).
 See `example/usage/README.md` for the full list of scripts.
 
 > `lio_pcl.py` demonstrates point cloud decompression and requires

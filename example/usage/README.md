@@ -12,7 +12,7 @@ cd example/usage
 python device_info.py --host 192.168.55.1 --port 1883 --key <your OpenAPI Key>
 ```
 
-The device only answers requests that carry a valid OpenAPI Key, so always pass `--key`.
+Requests without a valid OpenAPI Key are rejected with `EC_ProtoError` (`openapi auth error`), so always pass `--key`.
 
 Common connection parameters (available to all scripts):
 
@@ -35,7 +35,7 @@ Extra parameters of `modeling.py`:
 | `--start-timeout` | max seconds to wait for the device to start scanning | 90 |
 | `--stop-timeout` | max seconds to wait for the device to return to standby | 180 |
 
-Exit codes of `modeling.py`: `0` success, `1` timeout while starting or stopping, `2` the device was not in standby, `3` the device rejected `AC_START`, `4` no response to `AC_START` or `AC_STOP`, `130` interrupted with Ctrl-C (`AC_STOP` is still sent). Starting takes several seconds (the device goes standby -> starting -> scanning) and stopping takes tens of seconds, so a full run lasts more than a minute.
+Exit codes of `modeling.py`: `0` success, `1` timeout while starting or stopping, `2` the device was not in standby, `3` the device rejected `AC_START`, `4` no response to `AC_START` or `AC_STOP`, `130` interrupted with Ctrl-C (`AC_STOP` is still sent). Starting takes several seconds (the device goes standby -> starting -> scanning) and stopping takes tens of seconds, so a full run takes a minute or more (71 s was measured with `--watch 10` on a Lixel L2Pro).
 
 ## Script overview
 

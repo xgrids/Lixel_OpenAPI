@@ -431,7 +431,7 @@ message MqttCompressMsg {
 > The format is a raw LZ4 block (not the LZ4 frame format); decompression needs the
 > original size, which is `compressed_size` (the size before compression).
 
-> Restoring coordinates: the device multiplies the real coordinate by `header.scaler`, rounds it and sends it as `sint64`. To restore it, divide the wire integer by `header.scaler`, that is `x_real = int(x) / int(header.scaler)`, and the same for `y` and `z`. The device was measured sending `scaler = 1000`. With the protobuf JSON mapping a decoded `sint64` is a string, so convert it to an integer before doing arithmetic.
+> Restoring coordinates: the device multiplies the real coordinate by `header.scaler`, truncates it to an integer and sends it as `sint64`. To restore it, divide the wire integer by `header.scaler`, that is `x_real = int(x) / int(header.scaler)`, and the same for `y` and `z`. The device was measured sending `scaler = 1000`. With the protobuf JSON mapping a decoded `sint64` is a string, so convert it to an integer before doing arithmetic.
 
 ### 4.2 Real-time Pose Upload
 

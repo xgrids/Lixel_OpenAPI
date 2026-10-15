@@ -212,7 +212,7 @@ template = codec.default_json("ModelingRequest")
 | 测量点操作 | REQ / RSP | request/measure_point · response/measure_point | MeasurePointRequest / MeasurePointResponse |
 
 控制点 `action` 支持 `AC_ADD` / `AC_REMOVE`。proto 中定义了 `AC_UPDATE`，设备目前不处理，会返回 `EC_ProtoError`（`desc` 为 `invalid action`）。
-控制点请求只在扫描中有响应，待机时设备不回复。`AC_ADD` 忽略请求里的 `id`，响应里的 `id` 由设备分配，删除时使用这个值；
+待机时设备不回复控制点请求。`AC_ADD` 忽略请求里的 `id`，响应里的 `id` 由设备分配，删除时使用这个值；
 `AC_ADD` 成功时 `error.desc` 是该点的位姿（7 个浮点数，空格分隔），不是文字描述。
 测量点 `action` 仅支持 `AC_ADD` / `AC_REMOVE`。
 
@@ -395,9 +395,9 @@ python modeling.py --project demo --watch 5 --key <你的 OpenAPI Key>
 python heartbeat.py --seconds 15
 ```
 
-通用参数：`--host/--port/--tls/--username/--password/--key/--timeout`。设备只响应带有效
-OpenAPI Key 的请求，所以请始终传入 `--key`。`modeling.py` 会等设备真正进入扫描中再开始计 `--watch`，
-停止后还会等设备回到待机，所以一次运行超过一分钟。
+通用参数：`--host/--port/--tls/--username/--password/--key/--timeout`。没有有效
+OpenAPI Key 的请求会被拒绝并返回 `EC_ProtoError`（`openapi auth error`），所以请始终传入 `--key`。`modeling.py` 会等设备真正进入扫描中再开始计 `--watch`，
+停止后还会等设备回到待机，所以一次运行需要一分钟以上（Lixel L2Pro 上 `--watch 10` 实测 71 秒）。
 脚本清单见 `example/usage/README.md`。
 
 > `lio_pcl.py` 演示点云解压，需额外安装 `pip install lz4 zstandard`；
