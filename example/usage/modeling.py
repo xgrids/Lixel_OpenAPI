@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Example: scan control (modeling)
 
@@ -31,6 +32,9 @@ EC_SCAN_STARTING = _BASE + 301   # starting scan
 EC_SCAN_MODELING = _BASE + 302   # scanning
 EC_SCAN_STOPPING = _BASE + 303   # stopping scan
 EC_SCAN_STOPPED = _BASE + 304    # scan finished
+
+# Error.code values that mean the request was accepted (EC_Success, EC_SuccessAndReboot)
+_OK_CODES = (_BASE + 1, _BASE + 2)
 
 _NAMES = {
     EC_SCAN_READY: "standby",
@@ -118,6 +122,10 @@ def main() -> int:
             "mount_type": "MT_HAND",
         })
         dump("ModelingResponse (start)", start_rsp)
+        start_code = start_rsp.get("error", {}).get("code")
+        if start_code not in _OK_CODES:
+            print(f"The device rejected AC_START (error code {start_code}); aborting.", file=sys.stderr)
+            return 3
 
         # Wait until the device is really scanning
         print(f"Waiting for the device to start scanning (up to {args.start_timeout:.0f}s) ...")

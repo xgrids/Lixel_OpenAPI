@@ -418,12 +418,15 @@ most direct reference for secondary development. All are based on
 
 ```bash
 cd example/usage
-python device_info.py --host 192.168.55.1 --port 1883
-python modeling.py --project demo --watch 5
+python device_info.py --host 192.168.55.1 --port 1883 --key <your OpenAPI Key>
+python modeling.py --project demo --watch 5 --key <your OpenAPI Key>
 python heartbeat.py --seconds 15
 ```
 
-Common arguments: `--host/--port/--tls/--username/--password/--key/--timeout`.
+Common arguments: `--host/--port/--tls/--username/--password/--key/--timeout`. The device
+only answers requests that carry a valid OpenAPI Key, so always pass `--key`.
+`modeling.py` waits until the device is really scanning before it starts counting `--watch`,
+and waits for standby after stopping, so a run lasts more than a minute.
 See `example/usage/README.md` for the full list of scripts.
 
 > `lio_pcl.py` demonstrates point cloud decompression and requires

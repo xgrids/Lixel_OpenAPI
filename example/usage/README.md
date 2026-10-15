@@ -9,8 +9,10 @@ reference during secondary development. All are based on
 ```bash
 # From the project root, after activating the virtual environment
 cd example/usage
-python device_info.py --host 192.168.55.1 --port 1883
+python device_info.py --host 192.168.55.1 --port 1883 --key <your OpenAPI Key>
 ```
+
+The device only answers requests that carry a valid OpenAPI Key, so always pass `--key`.
 
 Common connection parameters (available to all scripts):
 
@@ -23,6 +25,17 @@ Common connection parameters (available to all scripts):
 | `--password` | MQTT password | empty |
 | `--key` | OpenAPI Key | empty |
 | `--timeout` | request timeout (seconds) | 10 |
+
+Extra parameters of `modeling.py`:
+
+| Parameter | Description | Default |
+|------|------|--------|
+| `--project` | project name | demo_project |
+| `--watch` | seconds to watch scan reports once the device is scanning | 5 |
+| `--start-timeout` | max seconds to wait for the device to start scanning | 90 |
+| `--stop-timeout` | max seconds to wait for the device to return to standby | 180 |
+
+Exit codes of `modeling.py`: `0` success, `1` timeout while starting or stopping, `2` the device was not in standby, `3` the device rejected `AC_START`. Starting takes several seconds (the device goes standby -> starting -> scanning) and stopping takes tens of seconds, so a full run lasts more than a minute.
 
 ## Script overview
 
@@ -39,7 +52,7 @@ Common connection parameters (available to all scripts):
 - `device_control.py` -- device control (USB drive/Ethernet/power off/reboot, etc.)
 
 ### Scan mapping
-- `modeling.py` -- start/stop scanning + subscribe to status
+- `modeling.py` -- start/stop scanning + subscribe to status. It waits for the device to be in standby, starts the scan, waits until the device is really scanning, watches the reports, stops the scan and waits for standby again
 - `modeling_status.py` -- query scan output URLs
 
 ### Point management

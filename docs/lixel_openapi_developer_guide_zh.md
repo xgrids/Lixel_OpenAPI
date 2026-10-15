@@ -388,12 +388,14 @@ python example/main.py --lang zh       # 启动即中文（也可在菜单实时
 
 ```bash
 cd example/usage
-python device_info.py --host 192.168.55.1 --port 1883
-python modeling.py --project demo --watch 5
+python device_info.py --host 192.168.55.1 --port 1883 --key <你的 OpenAPI Key>
+python modeling.py --project demo --watch 5 --key <你的 OpenAPI Key>
 python heartbeat.py --seconds 15
 ```
 
-通用参数：`--host/--port/--tls/--username/--password/--key/--timeout`。
+通用参数：`--host/--port/--tls/--username/--password/--key/--timeout`。设备只响应带有效
+OpenAPI Key 的请求，所以请始终传入 `--key`。`modeling.py` 会等设备真正进入扫描中再开始计 `--watch`，
+停止后还会等设备回到待机，所以一次运行超过一分钟。
 脚本清单见 `example/usage/README.md`。
 
 > `lio_pcl.py` 演示点云解压，需额外安装 `pip install lz4 zstandard`；
