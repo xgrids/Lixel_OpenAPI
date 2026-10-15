@@ -430,7 +430,7 @@ message MqttCompressMsg {
 > ⚠️ 为减小传输数据的大小，点云数据使用 LZ4 进行压缩。压缩格式为 LZ4 block（不是 LZ4 frame），
 > 解压时需要原始长度，即 `compressed_size`（压缩前的数据大小）。
 
-> 坐标还原：设备把真实坐标乘以 `header.scaler` 后取整，再以 `sint64` 发送。还原时用线上整数除以 `header.scaler`，即 `x_真实 = int(x) / int(header.scaler)`，`y`、`z` 同理。设备实测发送的 `scaler` 为 1000。按 protobuf 的 JSON 映射，`sint64` 解码成字典后是字符串，做运算前先转成整数。
+> 坐标还原：设备把真实坐标乘以 `header.scaler` 后向零截断取整，再以 `sint64` 发送。还原时用线上整数除以 `header.scaler`，即 `x_真实 = int(x) / int(header.scaler)`，`y`、`z` 同理。设备实测发送的 `scaler` 为 1000。按 protobuf 的 JSON 映射，`sint64` 解码成字典后是字符串，做运算前先转成整数。
 
 ### 4.2 实时位姿上传
 
