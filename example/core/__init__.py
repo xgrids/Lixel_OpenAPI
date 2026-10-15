@@ -6,7 +6,7 @@ Independent of Qt, shared by usage scripts and the GUI.
 Typical usage:
     from example.core import OpenApiClient, ClientOptions
 
-    client = OpenApiClient(ClientOptions(host="192.168.12.1"))
+    client = OpenApiClient(ClientOptions(host="192.168.55.1"))
     client.connect()
     rsp = client.request(
         "lixel/application/request/device_info", "DeviceInfoRequest", {},

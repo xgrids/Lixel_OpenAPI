@@ -9,14 +9,14 @@ reference during secondary development. All are based on
 ```bash
 # From the project root, after activating the virtual environment
 cd example/usage
-python device_info.py --host 192.168.12.1 --port 1883
+python device_info.py --host 192.168.55.1 --port 1883
 ```
 
 Common connection parameters (available to all scripts):
 
 | Parameter | Description | Default |
 |------|------|--------|
-| `--host` | device address | 192.168.12.1 |
+| `--host` | device address | 192.168.55.1 |
 | `--port` | MQTT port | 1883 |
 | `--tls` | use MQTTS(TLS) | off |
 | `--username` | MQTT username | empty |

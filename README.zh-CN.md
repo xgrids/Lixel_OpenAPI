@@ -134,7 +134,7 @@ rem 产出：output\OpenAPI-XPanel.exe
 
 ```bash
 cd example/usage
-python device_info.py --host 192.168.12.1 --port 1883
+python device_info.py --host 192.168.55.1 --port 1883
 ```
 
 通用参数：`--host`、`--port`、`--tls`、`--username`、`--password`、`--key`、

@@ -20,7 +20,7 @@ from example.core import ClientOptions, OpenApiClient  # noqa: E402
 def build_arg_parser(description: str) -> argparse.ArgumentParser:
     """Build a parser with standard connection arguments"""
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument("--host", default="192.168.12.1", help="device address")
+    parser.add_argument("--host", default="192.168.55.1", help="device address")
     parser.add_argument("--port", type=int, default=1883, help="MQTT port")
     parser.add_argument("--tls", action="store_true", help="use MQTTS (TLS)")
     parser.add_argument("--username", default="", help="MQTT username")

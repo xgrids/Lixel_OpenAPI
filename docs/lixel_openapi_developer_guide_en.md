@@ -298,7 +298,7 @@ point for secondary development.
 from example.core import ClientOptions
 
 opts = ClientOptions(
-    host="192.168.12.1",
+    host="192.168.55.1",
     port=1883,
     use_tls=False,          # set True for MQTTS
     username="",
@@ -315,7 +315,7 @@ opts = ClientOptions(
 ```python
 from example.core import OpenApiClient, ClientOptions
 
-with OpenApiClient(ClientOptions(host="192.168.12.1")) as client:
+with OpenApiClient(ClientOptions(host="192.168.55.1")) as client:
     rsp = client.request(
         req_topic="lixel/application/request/device_info",
         req_message="DeviceInfoRequest",
@@ -416,7 +416,7 @@ most direct reference for secondary development. All are based on
 
 ```bash
 cd example/usage
-python device_info.py --host 192.168.12.1 --port 1883
+python device_info.py --host 192.168.55.1 --port 1883
 python modeling.py --project demo --watch 5
 python heartbeat.py --seconds 15
 ```

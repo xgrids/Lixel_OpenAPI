@@ -8,7 +8,7 @@ scripts can invoke device interfaces with minimal code.
 Typical usage:
     from example.core import OpenApiClient, ClientOptions
 
-    opts = ClientOptions(host="192.168.12.1", port=1883)
+    opts = ClientOptions(host="192.168.55.1", port=1883)
     with OpenApiClient(opts) as client:
         rsp = client.request(
             req_topic="lixel/application/request/device_info",
@@ -53,7 +53,7 @@ class ClientOptions:
     - K2 / H1 / F1: MQTTS(8883), uses long account/password
     """
 
-    host: str = "192.168.12.1"
+    host: str = "192.168.55.1"
     port: int = 1883
     use_tls: bool = False
     username: str = ""

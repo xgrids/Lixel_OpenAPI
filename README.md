@@ -138,7 +138,7 @@ directly. They depend only on `example.core` (no Qt).
 
 ```bash
 cd example/usage
-python device_info.py --host 192.168.12.1 --port 1883
+python device_info.py --host 192.168.55.1 --port 1883
 ```
 
 Common parameters: `--host`, `--port`, `--tls`, `--username`, `--password`,

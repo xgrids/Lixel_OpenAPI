@@ -281,7 +281,7 @@ Ntrip 相关：`EC_NtripLoginSuccess`、`EC_NtripLogoutSuccess`、
 from example.core import ClientOptions
 
 opts = ClientOptions(
-    host="192.168.12.1",
+    host="192.168.55.1",
     port=1883,
     use_tls=False,          # MQTTS 时置 True
     username="",
@@ -298,7 +298,7 @@ opts = ClientOptions(
 ```python
 from example.core import OpenApiClient, ClientOptions
 
-with OpenApiClient(ClientOptions(host="192.168.12.1")) as client:
+with OpenApiClient(ClientOptions(host="192.168.55.1")) as client:
     rsp = client.request(
         req_topic="lixel/application/request/device_info",
         req_message="DeviceInfoRequest",
@@ -387,7 +387,7 @@ python example/main.py --lang zh       # 启动即中文（也可在菜单实时
 
 ```bash
 cd example/usage
-python device_info.py --host 192.168.12.1 --port 1883
+python device_info.py --host 192.168.55.1 --port 1883
 python modeling.py --project demo --watch 5
 python heartbeat.py --seconds 15
 ```
