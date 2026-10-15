@@ -239,24 +239,24 @@
         <translation>action 支持 AC_START / AC_STOP。错误码：EC_RequestSuccess / EC_RequestError / EC_ProtoError。</translation>
     </message>
     <message>
-        <source>Scan status query</source>
-        <translation>扫描状态查询</translation>
+        <source>Current project file URLs</source>
+        <translation>当前工程文件地址查询</translation>
     </message>
     <message>
-        <source>Query the scan status and artifact URLs (pose, control points, measure points) of the current / latest project.</source>
-        <translation>查询当前 / 最近工程的扫描状态与产物 URL（位姿、控制点、测量点）。</translation>
+        <source>Query the artifact URLs (pose, control points, measure points) of the current project. The device only answers while a project is being scanned; in standby the request times out.</source>
+        <translation>查询当前工程的产物 URL（位姿、控制点、测量点）。设备只在扫描工程时响应，待机时请求会超时。</translation>
     </message>
     <message>
         <source>Control point operations</source>
         <translation>控制点操作</translation>
     </message>
     <message>
-        <source>Add / remove / update control points; the device also reports when a point is marked via a button.</source>
-        <translation>控制点的增加 / 删除 / 更新；设备按键打点时也会主动上报。</translation>
+        <source>Add / remove control points; the device also reports when a point is marked via a button. The device only answers while scanning, and chooses the id of an added point itself.</source>
+        <translation>控制点的增加 / 删除；设备按键打点时也会主动上报。设备只在扫描中响应，新增点的 id 由设备分配。</translation>
     </message>
     <message>
-        <source>action supports AC_ADD / AC_REMOVE / AC_UPDATE only.</source>
-        <translation>action 仅支持 AC_ADD / AC_REMOVE / AC_UPDATE。</translation>
+        <source>action supports AC_ADD / AC_REMOVE. AC_UPDATE is defined in the proto but the device does not handle it. The id in the AC_ADD request is ignored; use the id from the response to remove.</source>
+        <translation>action 支持 AC_ADD / AC_REMOVE。proto 中定义了 AC_UPDATE，但设备不处理。AC_ADD 请求里的 id 会被忽略，删除时使用响应里的 id。</translation>
     </message>
     <message>
         <source>Measure point operations</source>

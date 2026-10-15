@@ -140,7 +140,7 @@ The BLE network-configuration flow between the Lixel device and the APP is as fo
 
 ### 2.2 Communication Authentication
 
-Messages from the OpenAPI will only be responded to after device authentication. The authentication key must be requested from XGRIDS, and the MQTT request message header must include the authentication key (`openapi_key`).
+Requests to the OpenAPI are only executed after device authentication. The authentication key must be requested from XGRIDS, and the MQTT request message header must include the authentication key (`openapi_key`). When the key is missing or wrong, the device still replies, with `error.code` set to `EC_ProtoError`, `error.desc` set to `openapi auth error`, and no business data.
 
 ```protobuf
 message Header {
@@ -430,6 +430,8 @@ message MqttCompressMsg {
 > ⚠️ To reduce the size of transmitted data, point cloud data is compressed using LZ4.
 > The format is a raw LZ4 block (not the LZ4 frame format); decompression needs the
 > original size, which is `compressed_size` (the size before compression).
+
+> Restoring coordinates: the device multiplies the real coordinate by `header.scaler`, rounds it and sends it as `sint64`. To restore it, divide the wire integer by `header.scaler`, that is `x_real = int(x) / int(header.scaler)`, and the same for `y` and `z`. The device was measured sending `scaler = 1000`. With the protobuf JSON mapping a decoded `sint64` is a string, so convert it to an integer before doing arithmetic.
 
 ### 4.2 Real-time Pose Upload
 

@@ -140,7 +140,7 @@ Lixel 设备与 APP 之间的 BLE 网络配置流程如下：
 
 ### 2.2 通信认证
 
-OpenAPI 的消息只有在设备认证通过后才会被响应。认证密钥须向 XGRIDS 申请，且 MQTT 请求消息头中必须包含认证密钥（`openapi_key`）。
+OpenAPI 的请求只有在设备认证通过后才会被执行。认证密钥须向 XGRIDS 申请，且 MQTT 请求消息头中必须包含认证密钥（`openapi_key`）。密钥缺失或不正确时，设备会返回响应，`error.code` 为 `EC_ProtoError`，`error.desc` 为 `openapi auth error`，响应中不含业务数据。
 
 ```protobuf
 message Header {
@@ -429,6 +429,8 @@ message MqttCompressMsg {
 
 > ⚠️ 为减小传输数据的大小，点云数据使用 LZ4 进行压缩。压缩格式为 LZ4 block（不是 LZ4 frame），
 > 解压时需要原始长度，即 `compressed_size`（压缩前的数据大小）。
+
+> 坐标还原：设备把真实坐标乘以 `header.scaler` 后取整，再以 `sint64` 发送。还原时用线上整数除以 `header.scaler`，即 `x_真实 = int(x) / int(header.scaler)`，`y`、`z` 同理。设备实测发送的 `scaler` 为 1000。按 protobuf 的 JSON 映射，`sint64` 解码成字典后是字符串，做运算前先转成整数。
 
 ### 4.2 实时位姿上传
 

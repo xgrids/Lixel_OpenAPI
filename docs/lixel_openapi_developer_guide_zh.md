@@ -197,7 +197,7 @@ template = codec.default_json("ModelingRequest")
 | 接口 | 方向 | topic（省略前缀） | 消息类型 |
 |------|------|------|----------|
 | 扫描控制 | REQ / RSP / RPT | request·response·report/modeling | ModelingRequest / ModelingResponse / ModelingReport |
-| 扫描状态查询 | REQ / RSP | request/modeling_status · response/modeling_status | ModelingStatusRequest / ModelingStatusResponse |
+| 当前工程文件地址查询 | REQ / RSP | request/modeling_status · response/modeling_status | ModelingStatusRequest / ModelingStatusResponse |
 
 扫描 `action` 支持 `AC_START` / `AC_STOP`。`ModelingRequest` 关键字段：
 `project_name`、`record_mode`（RM_CALC/RM_RECORD/RM_RECORD_CALC）、
@@ -211,7 +211,9 @@ template = codec.default_json("ModelingRequest")
 | 控制点操作 | REQ / RSP / RPT | request·response·report/control_point | ControlPointRequest / ControlPointResponse / ControlPointReport |
 | 测量点操作 | REQ / RSP | request/measure_point · response/measure_point | MeasurePointRequest / MeasurePointResponse |
 
-控制点 `action` 仅支持 `AC_ADD` / `AC_REMOVE` / `AC_UPDATE`；
+控制点 `action` 支持 `AC_ADD` / `AC_REMOVE`。proto 中定义了 `AC_UPDATE`，设备目前不处理，会返回 `EC_ProtoError`（`desc` 为 `invalid action`）。
+控制点请求只在扫描中有响应，待机时设备不回复。`AC_ADD` 忽略请求里的 `id`，响应里的 `id` 由设备分配，删除时使用这个值；
+`AC_ADD` 成功时 `error.desc` 是该点的位姿（7 个浮点数，空格分隔），不是文字描述。
 测量点 `action` 仅支持 `AC_ADD` / `AC_REMOVE`。
 
 > ⚠️ **测量点功能仅部分设备支持**，请确认目标设备是否具备该能力。
@@ -356,7 +358,7 @@ python example/main.py --lang zh       # 启动即中文（也可在菜单实时
 
 - 菜单栏：
   - 设置 → 语言：中英文实时切换（**默认英文**），无需重启
-  - 关于：显示程序版本号（当前 `V1.0.0`）
+  - 关于：显示构建时注入的程序版本号（从源码直接运行时为 `V0.0.0`）
 - 顶部连接栏：地址 / 端口 / 协议(MQTT·MQTTS) / 用户名 / 密码 / OpenAPI Key / 连接
   - 默认地址为 `192.168.55.1`
   - 用户名 / 密码仅在选择 MQTTS 协议时显示，需手动填写厂商提供的账号密码
@@ -405,8 +407,8 @@ OpenAPI Key 的请求，所以请始终传入 `--key`。`modeling.py` 会等设�
 
 ## 8. 本地化（i18n）
 
-GUI 中所有用户可见的中文文本均通过 Qt 的 `self.tr()` 包裹，翻译存放于
-`example/i18n/openapi_en.ts`（源语言 zh_CN，目标 en_US）。
+GUI 中所有用户可见的英文源文本均通过 Qt 的 `self.tr()` 包裹，翻译存放于
+`example/i18n/openapi_zh.ts`（源语言 en_US，目标 zh_CN）。
 
 ```bash
 # 从源码提取待翻译字符串（更新 .ts）
@@ -435,7 +437,7 @@ example/i18n/openapi_<lang>.qm
 用户名密码。core 客户端 `connect()` 超时会抛 `TimeoutError`。
 
 **Q：请求无响应/超时？**
-确认 `openapi_key` 正确、请求 topic 与消息类型匹配、设备处于可响应状态。
+确认请求 topic 与消息类型匹配、设备处于可响应状态。注意：部分请求在设备待机时不会被回复（如 `modeling_status`、`control_point`）。`openapi_key` 缺失或不正确时设备会立即返回 `EC_ProtoError`，`desc` 为 `openapi auth error`，不属于超时。
 `request()` 默认 10s 超时，可用 `--timeout` 或 `request_timeout` 调整。
 
 **Q：protobuf 版本报错？**

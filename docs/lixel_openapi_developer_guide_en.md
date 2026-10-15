@@ -209,7 +209,7 @@ Device control supported `ActionCmd`: `AC_USB_MASS`, `AC_USB_ETHER`,
 | Interface | Direction | Topic (prefix omitted) | Message |
 |-----------|-----------|------------------------|---------|
 | Scan control | REQ / RSP / RPT | request·response·report/modeling | ModelingRequest / ModelingResponse / ModelingReport |
-| Scan status query | REQ / RSP | request/modeling_status · response/modeling_status | ModelingStatusRequest / ModelingStatusResponse |
+| Current project file URLs | REQ / RSP | request/modeling_status · response/modeling_status | ModelingStatusRequest / ModelingStatusResponse |
 
 Scan `action` supports `AC_START` / `AC_STOP`. Key `ModelingRequest` fields:
 `project_name`, `record_mode` (RM_CALC/RM_RECORD/RM_RECORD_CALC),
@@ -224,7 +224,11 @@ Scan `action` supports `AC_START` / `AC_STOP`. Key `ModelingRequest` fields:
 | Control point operations | REQ / RSP / RPT | request·response·report/control_point | ControlPointRequest / ControlPointResponse / ControlPointReport |
 | Measure point operations | REQ / RSP | request/measure_point · response/measure_point | MeasurePointRequest / MeasurePointResponse |
 
-Control point `action` supports `AC_ADD` / `AC_REMOVE` / `AC_UPDATE` only;
+Control point `action` supports `AC_ADD` / `AC_REMOVE`. `AC_UPDATE` is defined in the proto, but the device does not handle it
+and returns `EC_ProtoError` (`desc` is `invalid action`).
+Control point requests are only answered while scanning; in standby the device does not reply. `AC_ADD` ignores the `id` in the
+request; the `id` in the response is chosen by the device and must be used to remove the point. On success the `error.desc` of
+`AC_ADD` is the pose of the point (7 floating point numbers separated by spaces), not a text description.
 measure point `action` supports `AC_ADD` / `AC_REMOVE` only.
 
 > ⚠️ **The measure point feature is supported on some devices only.** Please
@@ -378,7 +382,7 @@ UI structure:
 - Menu bar:
   - Settings → Language: switch between English/Chinese live (**English by
     default**), no restart required
-  - About: shows the program version (currently `V1.0.0`)
+  - About: shows the program version injected at build time (`V0.0.0` when run from source)
 - Top connection bar: Host / Port / Protocol (MQTT·MQTTS) / Username / Password /
   OpenAPI Key / Connect
   - Default host is `192.168.55.1`
@@ -437,9 +441,9 @@ See `example/usage/README.md` for the full list of scripts.
 
 ## 8. Localization (i18n)
 
-All user-visible text in the GUI is wrapped with Qt's `self.tr()`; translations
-are stored in `example/i18n/openapi_en.ts` (source language zh_CN, target
-en_US).
+All user-visible English source text in the GUI is wrapped with Qt's `self.tr()`;
+translations are stored in `example/i18n/openapi_zh.ts` (source language en_US,
+target zh_CN).
 
 ```bash
 # Extract translatable strings from source (update .ts)
@@ -471,8 +475,10 @@ Check the device host/port and whether the protocol matches (1883=MQTT,
 raises `TimeoutError` on timeout.
 
 **Q: No response / request timeout?**
-Confirm the `openapi_key` is correct, the request topic matches the message
-type, and the device is in a state that can respond. `request()` defaults to a
+Confirm the request topic matches the message type and the device is in a state that
+can respond. Note that some requests are not answered while the device is in standby
+(for example `modeling_status` and `control_point`). A missing or wrong `openapi_key`
+is answered immediately with `EC_ProtoError` and `desc` set to `openapi auth error`, so it is not a timeout. `request()` defaults to a
 10 s timeout, adjustable via `--timeout` or `request_timeout`.
 
 **Q: Protobuf version error?**
