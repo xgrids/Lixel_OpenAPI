@@ -243,16 +243,16 @@
         <translation>当前工程文件地址查询</translation>
     </message>
     <message>
-        <source>Query the artifact URLs (pose, control points, measure points) of the current project. The device only answers while a project is being scanned; in standby the request times out.</source>
-        <translation>查询当前工程的产物 URL（位姿、控制点、测量点）。设备只在扫描工程时响应，待机时请求会超时。</translation>
+        <source>Query the artifact URLs (pose, control points, measure points) of the current project. In standby the device does not reply and the request times out.</source>
+        <translation>查询当前工程的产物 URL（位姿、控制点、测量点）。待机时设备不回复，请求会超时。</translation>
     </message>
     <message>
         <source>Control point operations</source>
         <translation>控制点操作</translation>
     </message>
     <message>
-        <source>Add / remove control points; the device also reports when a point is marked via a button. The device only answers while scanning, and chooses the id of an added point itself.</source>
-        <translation>控制点的增加 / 删除；设备按键打点时也会主动上报。设备只在扫描中响应，新增点的 id 由设备分配。</translation>
+        <source>Add / remove control points; the device also reports when a point is marked via a button. In standby the device does not reply. It chooses the id of an added point itself.</source>
+        <translation>控制点的增加 / 删除；设备按键打点时也会主动上报。待机时设备不回复，新增点的 id 由设备分配。</translation>
     </message>
     <message>
         <source>action supports AC_ADD / AC_REMOVE. AC_UPDATE is defined in the proto but the device does not handle it. The id in the AC_ADD request is ignored; use the id from the response to remove.</source>

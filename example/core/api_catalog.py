@@ -185,9 +185,8 @@ INTERFACES: list[ApiInterface] = [
         name="Current project file URLs",
         group=GROUP_SCAN,
         description="Query the artifact URLs (pose, control points, measure "
-                    "points) of the current project. The device only answers "
-                    "while a project is being scanned; in standby the request "
-                    "times out.",
+                    "points) of the current project. In standby the device does "
+                    "not reply and the request times out.",
         request=_req("lixel/application/request/modeling_status", "ModelingStatusRequest"),
         response=_rsp("lixel/application/response/modeling_status", "ModelingStatusResponse"),
     ),
@@ -198,8 +197,8 @@ INTERFACES: list[ApiInterface] = [
         name="Control point operations",
         group=GROUP_POINT,
         description="Add / remove control points; the device also reports when a "
-                    "point is marked via a button. The device only answers while "
-                    "scanning, and chooses the id of an added point itself.",
+                    "point is marked via a button. In standby the device does not "
+                    "reply. It chooses the id of an added point itself.",
         request=_req("lixel/application/request/control_point", "ControlPointRequest"),
         response=_rsp("lixel/application/response/control_point", "ControlPointResponse"),
         report=_rpt("lixel/application/report/control_point", "ControlPointReport"),

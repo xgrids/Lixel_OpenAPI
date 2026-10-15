@@ -6,7 +6,8 @@ Example: control point operations (control_point)
 - Response topic : lixel/application/response/control_point (ControlPointResponse)
 - Report topic : lixel/application/report/control_point   (ControlPointReport)
 
-action only supports AC_ADD / AC_REMOVE / AC_UPDATE.
+action supports AC_ADD / AC_REMOVE. AC_UPDATE is defined in the proto but the
+device does not handle it (it answers EC_ProtoError, "invalid action").
 Demonstrates adding a control point.
 """
 from _common import build_arg_parser, dump, make_client
@@ -15,7 +16,7 @@ from _common import build_arg_parser, dump, make_client
 def main() -> int:
     parser = build_arg_parser("control point operations")
     parser.add_argument("--action", default="AC_ADD",
-                        help="AC_ADD / AC_REMOVE / AC_UPDATE")
+                        help="AC_ADD / AC_REMOVE")
     parser.add_argument("--id", type=int, default=1, help="control point ID")
     parser.add_argument("--label", default="CP-1", help="control point label")
     parser.add_argument("--height", type=int, default=1800, help="base point height (mm)")

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Example: query scan status (modeling_status)
+Example: query the file URLs of the current project (modeling_status)
 
 - Request topic : lixel/application/request/modeling_status  (ModelingStatusRequest)
 - Response topic : lixel/application/response/modeling_status (ModelingStatusResponse)
@@ -12,7 +12,7 @@ from _common import build_arg_parser, dump, make_client
 
 
 def main() -> int:
-    args = build_arg_parser("query scan status").parse_args()
+    args = build_arg_parser("query the file URLs of the current project").parse_args()
     with make_client(args) as client:
         rsp = client.request(
             req_topic="lixel/application/request/modeling_status",
