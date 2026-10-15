@@ -1,0 +1,7 @@
+# Common runtime dependencies (excluding GUI bindings and packaging tools)
+# For packaging, use the platform-specific requirements:
+#   Linux  : requirements-linux.txt   (PySide2 + nuitka)
+#   Windows: requirements-windows.txt (PySide6 + nuitka)
+paho-mqtt>=2.0.0
+protobuf>=4.25.0
+grpcio-tools>=1.60.0
