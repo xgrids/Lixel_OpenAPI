@@ -186,7 +186,7 @@ template = codec.default_json("ModelingRequest")
 | 接口 | 方向 | topic（省略前缀） | 消息类型 |
 |------|------|------|----------|
 | 查询设备信息 | REQ / RSP | request/device_info · response/device_info | DeviceInfoRequest / DeviceInfoResponse |
-| 设备参数配置 | REQ / RSP / RPT | request·response·report/device_config | DeviceConfigRequest / DeviceConfigResponse |
+| 设备参数配置 | REQ / RSP | request·response/device_config | DeviceConfigRequest / DeviceConfigResponse（proto 注释提到 `report/device_config`，但没有定义 `DeviceConfigReport` 消息，设备端也没有这个 topic，不要订阅） |
 | 设备控制 | REQ / RSP | request/device_control · response/device_control | DeviceControlRequest / DeviceControlResponse |
 
 设备控制支持的 `ActionCmd`：`AC_USB_MASS`、`AC_USB_ETHER`、`AC_DISK_FORMAT`、

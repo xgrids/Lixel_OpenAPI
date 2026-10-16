@@ -198,7 +198,7 @@ The realtime point cloud `MqttCompressMsg` needs a second decompress/decode:
 | Interface | Direction | Topic (prefix omitted) | Message |
 |-----------|-----------|------------------------|---------|
 | Query device info | REQ / RSP | request/device_info · response/device_info | DeviceInfoRequest / DeviceInfoResponse |
-| Device config | REQ / RSP / RPT | request·response·report/device_config | DeviceConfigRequest / DeviceConfigResponse |
+| Device config | REQ / RSP | request·response/device_config | DeviceConfigRequest / DeviceConfigResponse (a proto comment mentions `report/device_config`, but no `DeviceConfigReport` message is defined and the device has no such topic; do not subscribe to it) |
 | Device control | REQ / RSP | request/device_control · response/device_control | DeviceControlRequest / DeviceControlResponse |
 
 Device control supported `ActionCmd`: `AC_USB_MASS`, `AC_USB_ETHER`,
