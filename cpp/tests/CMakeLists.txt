@@ -52,6 +52,9 @@ lixel_add_test(test_client_stress test_client_stress.cpp)
 lixel_add_test(test_pointcloud test_pointcloud.cpp)
 target_link_libraries(test_pointcloud PRIVATE PkgConfig::LZ4)
 
+# T6: the scan flow against a scripted device.
+lixel_add_test(test_scan test_scan.cpp)
+
 # The paho transport against a real Mosquitto broker, plain and TLS. The test program skips
 # itself when it is started without a broker, so it can always be built and run by hand; ctest
 # runs it through a script that starts a throw-away broker (one ctest entry, broker_integration,

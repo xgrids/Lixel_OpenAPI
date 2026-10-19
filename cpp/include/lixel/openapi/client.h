@@ -45,6 +45,9 @@ struct ClientOptions {
 // Receives the raw bytes of a message. `topic` is the topic the message arrived on.
 using RawHandler = std::function<void(const std::string& topic, const std::string& payload)>;
 
+// Identifies one registered handler, see Client::Subscribe. 0 is never a valid id.
+using SubscriptionId = std::uint64_t;
+
 class Client : private ITransportListener {
  public:
   // Uses the paho based transport.
@@ -95,17 +98,25 @@ class Client : private ITransportListener {
   // every matching message. Subscribing the same filter twice adds a second handler. After a
   // reconnect the subscription is restored automatically. (The response topics that Request
   // uses are not restored in advance: the next Request subscribes to its response topic again.)
-  Result Subscribe(const std::string& topic_filter, RawHandler handler);
+  // When `id` is not null it receives a handle for RemoveSubscription (0 on failure).
+  Result Subscribe(const std::string& topic_filter, RawHandler handler,
+                   SubscriptionId* id = nullptr);
 
   // Subscribes and parses each payload as `message_name` before calling `handler`. A payload
   // that does not parse is dropped and counted in DroppedMessages().
   using MessageHandler =
       std::function<void(const std::string& topic, const google::protobuf::Message&)>;
   Result SubscribeMessage(const std::string& topic_filter, const std::string& message_name,
-                          MessageHandler handler);
+                          MessageHandler handler, SubscriptionId* id = nullptr);
 
   // Removes every handler of exactly this filter and unsubscribes.
   Result Unsubscribe(const std::string& topic_filter);
+
+  // Removes the one handler that Subscribe registered under `id`. The broker subscription is
+  // cancelled only when no other handler uses the same filter. Unknown ids are ignored (Ok).
+  // A call of the handler that is already running is not interrupted: when you need to free
+  // something the handler uses, let the handler own it (for example through a shared_ptr).
+  Result RemoveSubscription(SubscriptionId id);
 
   // Messages that arrived and could not be parsed since the client was created.
   std::uint64_t DroppedMessages() const;

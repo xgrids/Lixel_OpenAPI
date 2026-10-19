@@ -110,9 +110,11 @@ struct Client::Impl {
 
   mutable std::mutex mu;  // guards everything below
   struct Sub {
+    SubscriptionId id;
     std::string filter;
     RawHandler handler;
   };
+  SubscriptionId next_sub_id = 0;
   std::list<Sub> subs;
   std::set<std::string> broker_subscribed;  // filters the broker has acknowledged
   // key: response topic, value: waiters on that topic
@@ -311,49 +313,54 @@ Result Client::PublishRaw(const std::string& topic, const std::string& payload) 
   return impl_->transport->Publish(topic, payload);
 }
 
-Result Client::Subscribe(const std::string& topic_filter, RawHandler handler) {
+Result Client::Subscribe(const std::string& topic_filter, RawHandler handler, SubscriptionId* id) {
+  if (id != nullptr) *id = 0;
   if (topic_filter.empty() || !handler)
     return Result::Make(Errc::InvalidArgument, "empty filter or handler");
   if (!impl_->transport->IsConnected()) return Result::Make(Errc::NotConnected, "not connected");
   bool need = false;
+  SubscriptionId new_id = 0;
   {
     std::lock_guard<std::mutex> lock(impl_->mu);
-    impl_->subs.push_back({topic_filter, std::move(handler)});
+    new_id = ++impl_->next_sub_id;
+    impl_->subs.push_back({new_id, topic_filter, std::move(handler)});
     need = impl_->broker_subscribed.count(topic_filter) == 0;
   }
-  if (!need) return Result();
+  if (!need) {
+    if (id != nullptr) *id = new_id;
+    return Result();
+  }
   Result r = impl_->transport->Subscribe(topic_filter, impl_->options.subscribe_timeout);
   std::lock_guard<std::mutex> lock(impl_->mu);
   if (r.ok()) {
     impl_->broker_subscribed.insert(topic_filter);
+    if (id != nullptr) *id = new_id;
   } else {
     // keep the registration out of the table when the broker did not accept it
-    for (auto it = impl_->subs.rbegin(); it != impl_->subs.rend(); ++it) {
-      if (it->filter == topic_filter) {
-        impl_->subs.erase(std::next(it).base());
-        break;
-      }
-    }
+    impl_->subs.remove_if([&](const Impl::Sub& sub) { return sub.id == new_id; });
   }
   return r;
 }
 
 Result Client::SubscribeMessage(const std::string& topic_filter, const std::string& message_name,
-                                MessageHandler handler) {
+                                MessageHandler handler, SubscriptionId* id) {
+  if (id != nullptr) *id = 0;
   if (!handler) return Result::Make(Errc::InvalidArgument, "handler is empty");
   if (NewMessage(message_name) == nullptr) {
     return Result::Make(Errc::InvalidArgument, "unknown message name: " + message_name);
   }
   Impl* impl = impl_.get();
-  return Subscribe(topic_filter, [impl, message_name, handler](const std::string& topic,
-                                                               const std::string& payload) {
-    std::unique_ptr<pb::Message> msg = NewMessage(message_name);
-    if (!msg || !msg->ParseFromString(payload)) {
-      ++impl->dropped;
-      return;
-    }
-    handler(topic, *msg);
-  });
+  return Subscribe(
+      topic_filter,
+      [impl, message_name, handler](const std::string& topic, const std::string& payload) {
+        std::unique_ptr<pb::Message> msg = NewMessage(message_name);
+        if (!msg || !msg->ParseFromString(payload)) {
+          ++impl->dropped;
+          return;
+        }
+        handler(topic, *msg);
+      },
+      id);
 }
 
 Result Client::Unsubscribe(const std::string& topic_filter) {
@@ -364,6 +371,24 @@ Result Client::Unsubscribe(const std::string& topic_filter) {
   }
   if (!impl_->transport->IsConnected()) return Result();
   return impl_->transport->Unsubscribe(topic_filter);
+}
+
+Result Client::RemoveSubscription(SubscriptionId id) {
+  std::string filter;
+  {
+    std::lock_guard<std::mutex> lock(impl_->mu);
+    auto it = std::find_if(impl_->subs.begin(), impl_->subs.end(),
+                           [&](const Impl::Sub& sub) { return sub.id == id; });
+    if (it == impl_->subs.end()) return Result();
+    filter = it->filter;
+    impl_->subs.erase(it);
+    const bool shared = std::any_of(impl_->subs.begin(), impl_->subs.end(),
+                                    [&](const Impl::Sub& sub) { return sub.filter == filter; });
+    if (shared) return Result();
+    impl_->broker_subscribed.erase(filter);
+  }
+  if (!impl_->transport->IsConnected()) return Result();
+  return impl_->transport->Unsubscribe(filter);
 }
 
 std::uint64_t Client::DroppedMessages() const { return impl_->dropped.load(); }

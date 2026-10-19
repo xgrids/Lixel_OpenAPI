@@ -367,6 +367,60 @@ TEST(Subscribe, TwoHandlersOnTheSameFilterBothRunAndUnsubscribeRemovesBoth) {
   EXPECT_EQ(b.load(), 1);
 }
 
+TEST(Subscribe, RemoveSubscriptionRemovesOnlyThatHandlerAndKeepsTheBrokerSubscription) {
+  Fixture f;
+  ASSERT_TRUE(f.client->Connect().ok());
+  std::atomic<int> a{0}, b{0};
+  SubscriptionId ida = 0, idb = 0;
+  ASSERT_TRUE(f.client
+                  ->Subscribe(
+                      "t/x", [&](const std::string&, const std::string&) { ++a; }, &ida)
+                  .ok());
+  ASSERT_TRUE(f.client
+                  ->Subscribe(
+                      "t/x", [&](const std::string&, const std::string&) { ++b; }, &idb)
+                  .ok());
+  EXPECT_NE(ida, 0u);
+  EXPECT_NE(idb, 0u);
+  EXPECT_NE(ida, idb);
+
+  ASSERT_TRUE(f.client->RemoveSubscription(ida).ok());
+  EXPECT_TRUE(f.fake->IsSubscribed("t/x")) << "another handler still needs the filter";
+  f.fake->Inject("t/x", "1");
+  std::this_thread::sleep_for(milliseconds(100));
+  EXPECT_EQ(a.load(), 0);
+  EXPECT_EQ(b.load(), 1);
+
+  ASSERT_TRUE(f.client->RemoveSubscription(idb).ok());
+  EXPECT_FALSE(f.fake->IsSubscribed("t/x")) << "the last handler is gone";
+  f.fake->Inject("t/x", "2");
+  std::this_thread::sleep_for(milliseconds(100));
+  EXPECT_EQ(b.load(), 1);
+
+  EXPECT_TRUE(f.client->RemoveSubscription(idb).ok()) << "removing twice is ignored";
+  EXPECT_TRUE(f.client->RemoveSubscription(987654).ok()) << "unknown ids are ignored";
+}
+
+TEST(Subscribe, TheIdIsZeroWhenTheSubscriptionFailed) {
+  Fixture f;
+  ASSERT_TRUE(f.client->Connect().ok());
+  f.fake->fail_subscribe = true;
+  SubscriptionId id = 77;
+  EXPECT_FALSE(f.client
+                   ->Subscribe(
+                       "t/x", [](const std::string&, const std::string&) {}, &id)
+                   .ok());
+  EXPECT_EQ(id, 0u);
+  f.fake->fail_subscribe = false;
+  SubscriptionId typed = 77;
+  EXPECT_FALSE(f.client
+                   ->SubscribeMessage(
+                       "t/x", "NoSuchMessage",
+                       [](const std::string&, const google::protobuf::Message&) {}, &typed)
+                   .ok());
+  EXPECT_EQ(typed, 0u);
+}
+
 TEST(Subscribe, TypedHandlerParsesAndCountsBadPayloads) {
   Fixture f;
   ASSERT_TRUE(f.client->Connect().ok());

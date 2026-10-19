@@ -58,6 +58,7 @@ add_library(lixel_openapi STATIC
   src/paho_transport.cpp
   src/pointcloud.cpp
   src/result.cpp
+  src/scan.cpp
   src/version.cpp
 )
 add_library(LixelOpenApi::lixel_openapi ALIAS lixel_openapi)
