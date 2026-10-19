@@ -12,6 +12,7 @@ else()
 endif()
 
 option(LIXEL_OPENAPI_BUILD_TESTS "Build the unit tests" ${_lixel_is_top_level})
+option(LIXEL_OPENAPI_BUILD_EXAMPLES "Build the command line examples" ${_lixel_is_top_level})
 set(LIXEL_OPENAPI_SANITIZER "" CACHE STRING
     "Sanitizer for our own targets: address, thread, undefined, or empty")
 set_property(CACHE LIXEL_OPENAPI_SANITIZER PROPERTY STRINGS "" address thread undefined)
@@ -79,6 +80,9 @@ target_link_libraries(lixel_openapi
 lixel_enable_warnings(lixel_openapi)
 lixel_apply_sanitizer(lixel_openapi)
 
+if(LIXEL_OPENAPI_BUILD_EXAMPLES)
+  add_subdirectory(examples)
+endif()
 if(LIXEL_OPENAPI_BUILD_TESTS)
   enable_testing()
   add_subdirectory(tests)

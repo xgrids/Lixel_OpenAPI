@@ -16,20 +16,22 @@ namespace pb = google::protobuf;
 // The package of every message in aiot_msgs.proto.
 const char kPackage[] = "openapi.aiot_msgs.";
 
-// Generated descriptors register themselves when the object file of the generated code is
-// linked in. A static library only contributes object files that something refers to, so refer
-// to one generated class here: anything that uses the codec then also gets the registrations.
-const pb::Message& KeepGeneratedCodeLinked() {
-  return ::openapi::aiot_msgs::Header::default_instance();
+// The pool that holds the descriptors of aiot_msgs.proto.
+//
+// Generated descriptors register themselves when the object file of the generated code is linked
+// in, and a static library only contributes object files that something refers to. Asking a
+// generated class for its pool makes the lookups below depend on that object file for real, so a
+// program that only knows message *names* (it includes no generated header) still gets the
+// registrations. (An earlier version compared the address of a generated object with nullptr;
+// the compiler folded that to true, no reference was left, and such programs found no messages.)
+const pb::DescriptorPool* GeneratedPool() {
+  return ::openapi::aiot_msgs::Header::descriptor()->file()->pool();
 }
-const bool kLinked = (&KeepGeneratedCodeLinked() != nullptr);
 
 }  // namespace
 
 std::unique_ptr<pb::Message> NewMessage(const std::string& name) {
-  (void)kLinked;
-  const pb::Descriptor* desc =
-      pb::DescriptorPool::generated_pool()->FindMessageTypeByName(kPackage + name);
+  const pb::Descriptor* desc = GeneratedPool()->FindMessageTypeByName(kPackage + name);
   if (desc == nullptr) return nullptr;
   const pb::Message* prototype = pb::MessageFactory::generated_factory()->GetPrototype(desc);
   if (prototype == nullptr) return nullptr;
