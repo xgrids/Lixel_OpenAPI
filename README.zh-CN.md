@@ -1,28 +1,49 @@
 # lixel_openapi
 
-Lixel 设备 OpenAPI 例程与调试工具（**OpenAPI-XPanel**）。
-
-本仓库提供基于 MQTT 对 Lixel 设备 OpenAPI 进行二次开发所需的全部内容：
-
-- **OpenAPI-XPanel** —— 跨平台图形化控制面板，可交互式发布请求、订阅上报。
-- **示例脚本** —— 每个接口一个可直接复制运行的最小示例。
-- **可复用核心** —— 与 Qt 无关的 OpenAPI/MQTT 客户端及 protobuf 编解码器。
+基于 Lixel 设备 OpenAPI 进行二次开发所需的全部内容。OpenAPI 通过 MQTT 传输 protobuf 消息。
 
 > 中文 README。English version: [README.md](README.md)。
 
+## 两种使用方式
+
+按你的应用选择。两种方式使用同一套 MQTT 主题和 [`proto/`](proto/) 里的同一份 protobuf 定义，
+并共用 [`docs/`](docs/) 里的文档。
+
+| | **Python** | **C++** |
+|---|---|---|
+| 提供内容 | OpenAPI-XPanel 图形界面、18 个示例脚本、可复用客户端 | 客户端库与示例 |
+| 平台 | Linux、Windows | Linux（预览） |
+| 状态 | 已发布（1.0.x） | 预览版，客户端接口尚未实现 |
+| 位置 | 仓库根目录：[`example/`](example/)、[`src/`](src/) | [`cpp/`](cpp/) |
+| 从这里开始 | [快速开始（Python）](#快速开始python) | [cpp/README.zh-CN.md](cpp/README.zh-CN.md) |
+
+本页其余部分介绍 Python 方式。C++ 方式有自己的 [README](cpp/README.zh-CN.md)。
+
 ## 功能特性
 
+Python：
+
+- **OpenAPI-XPanel** —— 跨平台图形化控制面板，可交互式发布请求、订阅上报
+- **示例脚本** —— 每个接口一个可直接复制运行的最小示例
+- **可复用核心** —— 与 Qt 无关的 OpenAPI/MQTT 客户端及 protobuf 编解码器
 - 支持 MQTT / MQTTS (TLS) 连接设备
 - 基于 JSON 模板的 protobuf 消息编解码
 - 交互式发布/订阅图形界面（中英文，运行时可切换）
 - 18 个开箱即用的接口示例脚本
 - 通过 Nuitka 打包为 Linux 与 Windows 单文件可执行程序
 
+C++（预览）：见 [cpp/README.zh-CN.md](cpp/README.zh-CN.md)。
+
 ## 项目结构
 
 ```
 lixel_openapi/
-├── example/                 # 应用与示例
+├── proto/openapi/           # 共用：Protobuf 定义（aiot_msgs.proto），Python 与 C++ 都使用
+├── docs/                    # 共用：开发者指南 + 协议参考
+│
+├── cpp/                     # C++：客户端库、测试（预览），有自己的 README
+│
+├── example/                 # Python：应用与示例
 │   ├── main.py              # OpenAPI-XPanel 入口
 │   ├── core/                # 与 Qt 无关的客户端 + protobuf 编解码
 │   │   ├── api_catalog.py   # 接口目录（主题、消息、元数据）
@@ -31,19 +52,17 @@ lixel_openapi/
 │   ├── gui/                 # PySide 图形界面（控制 / 发布 / 订阅面板）
 │   ├── usage/               # 18 个按接口划分的示例脚本
 │   └── i18n/                # Qt 翻译文件（.ts / .qm）+ build_i18n.sh
-├── proto/openapi/           # Protobuf 定义（aiot_msgs.proto）
-├── src/                     # 内部支持
+├── src/                     # Python：内部支持
 │   ├── qt_compat.py         # PySide2 / PySide6 绑定兼容层
 │   ├── generate_proto.py    # 由 proto/ 生成 src/proto_gen
 │   └── proto_gen/           # 生成的 protobuf 模块（请勿手动编辑）
-├── assets/                  # 应用图标（icon.ico / icon.png）
-├── docs/                    # 开发者指南 + 协议参考
-├── build.sh / build.bat     # Nuitka 打包（Linux / Windows）
-├── build-venv.sh / build-wenv.cmd  # 创建本地开发虚拟环境
-└── requirements*.txt        # 运行 / 打包依赖
+├── assets/                  # Python：应用图标（icon.ico / icon.png）
+├── build.sh / build.bat     # Python：Nuitka 打包（Linux / Windows）
+├── build-venv.sh / build-wenv.cmd  # Python：创建本地开发虚拟环境
+└── requirements*.txt        # Python：运行 / 打包依赖
 ```
 
-## 环境要求
+## 环境要求（Python）
 
 - Python 3.8+（打包目标为 Python 3.8，以兼容较旧的 glibc）
 - Qt 绑定：Linux 使用 **PySide2**，Windows 使用 **PySide6**
@@ -57,7 +76,7 @@ lixel_openapi/
 | `requirements-linux.txt` | Linux 运行 + 打包（PySide2 + nuitka） |
 | `requirements-windows.txt` | Windows 运行 + 打包（PySide6 + nuitka） |
 
-## 快速开始
+## 快速开始（Python）
 
 ### Linux
 
@@ -92,7 +111,7 @@ python example/main.py
 
 界面语言也可在运行时通过 **设置 → 语言** 切换。
 
-## 生成 protobuf 代码
+## 生成 protobuf 代码（Python）
 
 生成的 protobuf 模块位于 `src/proto_gen/openapi/`，由
 `proto/openapi/aiot_msgs.proto` 生成：
@@ -103,7 +122,7 @@ python src/generate_proto.py
 
 开发环境脚本（`build-venv.sh` / `build-wenv.cmd`）与构建脚本会自动执行该步骤。
 
-## 构建可执行程序
+## 构建可执行程序（Python 图形界面）
 
 Nuitka 会生成名为 **OpenAPI-XPanel** 的单文件可执行程序，并使用
 `assets/icon` 作为应用图标。
@@ -127,7 +146,7 @@ rem 产出：output\OpenAPI-XPanel.exe
 构建脚本会在编译前将 `APP_VERSION` / `APP_BUILD_TIME` 写入
 `example/main.py`，并在编译后还原。
 
-## 示例脚本
+## 示例脚本（Python）
 
 `example/usage/` 下的每个脚本演示一个接口，可直接运行，且仅依赖
 `example.core`（不依赖 Qt）。

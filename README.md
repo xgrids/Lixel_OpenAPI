@@ -1,30 +1,53 @@
 # lixel_openapi
 
-OpenAPI examples and a debugging tool (**OpenAPI-XPanel**) for Lixel devices.
-
-This repository provides everything needed for secondary development against a
-Lixel device's OpenAPI over MQTT:
-
-- **OpenAPI-XPanel** — a cross-platform GUI control panel to publish requests and
-  subscribe to reports interactively.
-- **Usage scripts** — minimal, copy-pasteable examples for each interface.
-- **Reusable core** — a Qt-independent OpenAPI/MQTT client and protobuf codec.
+Everything needed for secondary development against a Lixel device's OpenAPI,
+which runs over MQTT with protobuf messages.
 
 > English README. 中文版见 [README.zh-CN.md](README.zh-CN.md)。
 
+## Two ways to use the OpenAPI
+
+Pick the one that matches your application. Both talk to the device with the same MQTT
+topics and the same protobuf definition in [`proto/`](proto/), and share the documents in
+[`docs/`](docs/).
+
+| | **Python** | **C++** |
+|---|---|---|
+| What you get | OpenAPI-XPanel GUI, 18 example scripts, a reusable client | A client library and examples |
+| Platforms | Linux, Windows | Linux (preview) |
+| Status | Released (1.0.x) | Preview, the client API is not implemented yet |
+| Where | Repository root: [`example/`](example/), [`src/`](src/) | [`cpp/`](cpp/) |
+| Start here | [Quick start (Python)](#quick-start-python) | [cpp/README.md](cpp/README.md) |
+
+The rest of this page describes the Python way. The C++ way has its own
+[README](cpp/README.md).
+
 ## Features
 
+Python:
+
+- **OpenAPI-XPanel** — a cross-platform GUI control panel to publish requests and
+  subscribe to reports interactively
+- **Usage scripts** — minimal, copy-pasteable examples for each interface
+- **Reusable core** — a Qt-independent OpenAPI/MQTT client and protobuf codec
 - MQTT / MQTTS (TLS) connection to the device
 - Protobuf message encode/decode with JSON templates
 - Interactive publish/subscribe GUI (English / Chinese, switchable at runtime)
 - 18 ready-to-run interface example scripts
 - One-file executable packaging via Nuitka for Linux and Windows
 
+C++ (preview): see [cpp/README.md](cpp/README.md).
+
 ## Project structure
 
 ```
 lixel_openapi/
-├── example/                 # Application and examples
+├── proto/openapi/           # SHARED: Protobuf definitions (aiot_msgs.proto), used by Python and C++
+├── docs/                    # SHARED: Developer guide + protocol reference
+│
+├── cpp/                     # C++: client library, tests (preview), has its own README
+│
+├── example/                 # Python: application and examples
 │   ├── main.py              # OpenAPI-XPanel entry point
 │   ├── core/                # Qt-independent client + protobuf codec
 │   │   ├── api_catalog.py   # Interface catalog (topics, messages, metadata)
@@ -33,19 +56,17 @@ lixel_openapi/
 │   ├── gui/                 # PySide GUI (control / publish / subscribe panels)
 │   ├── usage/               # 18 per-interface example scripts
 │   └── i18n/                # Qt translations (.ts / .qm) + build_i18n.sh
-├── proto/openapi/           # Protobuf definitions (aiot_msgs.proto)
-├── src/                     # Internal support
+├── src/                     # Python: internal support
 │   ├── qt_compat.py         # PySide2 / PySide6 binding shim
 │   ├── generate_proto.py    # Generates src/proto_gen from proto/
 │   └── proto_gen/           # Generated protobuf modules (do not edit)
-├── assets/                  # Application icon (icon.ico / icon.png)
-├── docs/                    # Developer guide + protocol reference
-├── build.sh / build.bat     # Nuitka packaging (Linux / Windows)
-├── build-venv.sh / build-wenv.cmd  # Create local dev virtual environments
-└── requirements*.txt        # Runtime / packaging dependencies
+├── assets/                  # Python: application icon (icon.ico / icon.png)
+├── build.sh / build.bat     # Python: Nuitka packaging (Linux / Windows)
+├── build-venv.sh / build-wenv.cmd  # Python: create local dev virtual environments
+└── requirements*.txt        # Python: runtime / packaging dependencies
 ```
 
-## Requirements
+## Requirements (Python)
 
 - Python 3.8+ (the packaged build targets Python 3.8 for glibc compatibility)
 - Qt binding: **PySide2** on Linux, **PySide6** on Windows
@@ -59,7 +80,7 @@ Dependency files:
 | `requirements-linux.txt` | Linux run + packaging (PySide2 + nuitka) |
 | `requirements-windows.txt` | Windows run + packaging (PySide6 + nuitka) |
 
-## Quick start
+## Quick start (Python)
 
 ### Linux
 
@@ -95,7 +116,7 @@ python example/main.py
 
 The GUI language can also be switched at runtime via **Settings → Language**.
 
-## Generating protobuf code
+## Generating protobuf code (Python)
 
 The generated protobuf modules live under `src/proto_gen/openapi/` and are
 produced from `proto/openapi/aiot_msgs.proto`:
@@ -107,7 +128,7 @@ python src/generate_proto.py
 The dev-environment scripts (`build-venv.sh` / `build-wenv.cmd`) and the build
 scripts run this automatically.
 
-## Building executables
+## Building executables (Python GUI)
 
 Nuitka produces a single-file executable named **OpenAPI-XPanel**, using
 `assets/icon` as the application icon.
@@ -131,7 +152,7 @@ rem Output: output\OpenAPI-XPanel.exe
 The build scripts stamp `APP_VERSION` / `APP_BUILD_TIME` into `example/main.py`
 before compiling and restore them afterwards.
 
-## Example scripts
+## Example scripts (Python)
 
 Each script in `example/usage/` demonstrates a single interface and can be run
 directly. They depend only on `example.core` (no Qt).
