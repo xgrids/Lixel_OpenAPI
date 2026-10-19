@@ -53,7 +53,9 @@ configure_file(
 
 add_library(lixel_openapi STATIC
   src/catalog.cpp
+  src/client.cpp
   src/codec.cpp
+  src/paho_transport.cpp
   src/result.cpp
   src/version.cpp
 )

@@ -11,11 +11,18 @@ if(NOT GTest_FOUND)
 endif()
 include(GoogleTest)
 
+# Python 3 (standard library only) is used by the catalog drift check and the broker script.
+find_package(Python3 COMPONENTS Interpreter QUIET)
+
 function(lixel_add_test name)
-  add_executable(${name} ${ARGN})
+  cmake_parse_arguments(T "NO_DISCOVERY" "" "" ${ARGN})
+  add_executable(${name} ${T_UNPARSED_ARGUMENTS})
   target_link_libraries(${name} PRIVATE lixel_openapi GTest::gtest GTest::gtest_main)
   lixel_enable_warnings(${name})
   lixel_apply_sanitizer(${name})
+  if(T_NO_DISCOVERY)
+    return()
+  endif()
   # Discover the test cases when ctest runs, not while building. Running the test
   # program at build time fails whenever it needs a special runtime environment
   # (for example a sanitizer runtime that must be preloaded) or when cross-compiling.
@@ -37,9 +44,29 @@ target_link_libraries(test_smoke PRIVATE lixel::paho PkgConfig::LZ4)
 # T2: interface table, JSON codec, status codes.
 lixel_add_test(test_catalog_codec test_catalog_codec.cpp)
 
+# T3/T4: request/response, subscriptions, reconnect, against a fake transport.
+lixel_add_test(test_client test_client.cpp)
+lixel_add_test(test_client_stress test_client_stress.cpp)
+
+# The paho transport against a real Mosquitto broker, plain and TLS. The test program skips
+# itself when it is started without a broker, so it can always be built and run by hand; ctest
+# runs it through a script that starts a throw-away broker (one ctest entry, broker_integration,
+# not one per case, because without a broker every case would show up as skipped). The ctest entry exists only when
+# mosquitto and openssl are installed.
+lixel_add_test(test_broker test_broker.cpp NO_DISCOVERY)
+find_program(LIXEL_MOSQUITTO mosquitto)
+find_program(LIXEL_MOSQUITTO_PASSWD mosquitto_passwd)
+find_program(LIXEL_OPENSSL openssl)
+if(LIXEL_MOSQUITTO AND LIXEL_MOSQUITTO_PASSWD AND LIXEL_OPENSSL AND Python3_Interpreter_FOUND)
+  add_test(NAME broker_integration
+           COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/broker/run_with_broker.sh $<TARGET_FILE:test_broker>)
+  set_tests_properties(broker_integration PROPERTIES TIMEOUT 120)
+else()
+  message(STATUS "mosquitto, mosquitto_passwd, openssl or Python 3 not found: broker_integration is not registered")
+endif()
+
 # The C++ interface table must not drift from the Python catalog. Needs only Python 3 with the
 # standard library.
-find_package(Python3 COMPONENTS Interpreter QUIET)
 if(Python3_Interpreter_FOUND)
   add_test(NAME catalog_drift
            COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/../tools/catalog_tool.py check)
