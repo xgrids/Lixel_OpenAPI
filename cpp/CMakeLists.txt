@@ -56,6 +56,7 @@ add_library(lixel_openapi STATIC
   src/client.cpp
   src/codec.cpp
   src/paho_transport.cpp
+  src/pointcloud.cpp
   src/result.cpp
   src/version.cpp
 )
