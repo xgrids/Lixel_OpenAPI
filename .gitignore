@@ -19,6 +19,8 @@ dist/
 output/
 *.zip
 
+# C++ 客户端构建目录（cmake -S cpp -B cpp/build）
+cpp/build*/
 # 本地测试输出与编辑器文件
 .vscode/
 .idea/
