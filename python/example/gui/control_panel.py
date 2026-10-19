@@ -63,7 +63,7 @@ except ImportError:  # pragma: no cover
     from gui.subscribe_panel import SubscribePanel  # type: ignore
 
 
-APP_VERSION = "V0.0.0"  # fallback only; the real version lives in example/main.py
+APP_VERSION = "V0.0.0"  # fallback only; the real version lives in python/example/main.py
 
 # Supported languages: code -> (menu display name, .qm file or None for the
 # English source language).

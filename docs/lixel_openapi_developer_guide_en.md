@@ -123,10 +123,10 @@ The first field of every request/response/report message is usually a `Header`:
 ### 3.1 Proto Compilation
 
 Use the bundled script to compile `proto/openapi/aiot_msgs.proto` into the
-Python module `src/proto_gen/openapi/aiot_msgs_pb2.py`:
+Python module `python/src/proto_gen/openapi/aiot_msgs_pb2.py`:
 
 ```bash
-python src/generate_proto.py
+python python/src/generate_proto.py
 ```
 
 > Generation uses the current environment's `grpc_tools.protoc`, keeping the
@@ -287,7 +287,7 @@ Request-response messages carry error info in the `Error error = 15` field
 
 ## 5. core Client Wrapper
 
-`example/core` provides a reusable, Qt-free wrapper and is the recommended entry
+`python/example/core` provides a reusable, Qt-free wrapper and is the recommended entry
 point for secondary development.
 
 ### 5.1 Modules
@@ -368,13 +368,13 @@ callback receives a string.
 
 ## 6. GUI Control Panel
 
-`example/main.py` provides a graphical control panel with a "Publish" panel on
+`python/example/main.py` provides a graphical control panel with a "Publish" panel on
 the left and a "Subscribe" panel on the right (same layout as the OpenAPI MQTT
 Debugger).
 
 ```bash
-python example/main.py                 # English UI by default
-python example/main.py --lang zh       # Start in Chinese (also switchable in the menu)
+python python/example/main.py                 # English UI by default
+python python/example/main.py --lang zh       # Start in Chinese (also switchable in the menu)
 ```
 
 UI structure:
@@ -416,12 +416,12 @@ UI structure:
 
 ## 7. Example Scripts
 
-`example/usage/` provides a standalone, runnable script for each interface — the
+`python/example/usage/` provides a standalone, runnable script for each interface — the
 most direct reference for secondary development. All are based on
 `OpenApiClient` and do not depend on the GUI.
 
 ```bash
-cd example/usage
+cd python/example/usage
 python device_info.py --host 192.168.55.1 --port 1883 --key <your OpenAPI Key>
 python modeling.py --project demo --watch 5 --key <your OpenAPI Key>
 python heartbeat.py --seconds 15
@@ -431,7 +431,7 @@ Common arguments: `--host/--port/--tls/--username/--password/--key/--timeout`. R
 without a valid OpenAPI Key are rejected with `EC_ProtoError` (`openapi auth error`), so always pass `--key`.
 `modeling.py` waits until the device is really scanning before it starts counting `--watch`,
 and waits for standby after stopping, so a run takes a minute or more (71 s was measured with `--watch 10` on a Lixel L2Pro).
-See `example/usage/README.md` for the full list of scripts.
+See `python/example/usage/README.md` for the full list of scripts.
 
 > `lio_pcl.py` demonstrates point cloud decompression and requires
 > `pip install lz4 zstandard`; without them the script prints a hint and skips
@@ -442,15 +442,15 @@ See `example/usage/README.md` for the full list of scripts.
 ## 8. Localization (i18n)
 
 All user-visible English source text in the GUI is wrapped with Qt's `self.tr()`;
-translations are stored in `example/i18n/openapi_zh.ts` (source language en_US,
+translations are stored in `python/example/i18n/openapi_zh.ts` (source language en_US,
 target zh_CN).
 
 ```bash
 # Extract translatable strings from source (update .ts)
-bash example/i18n/build_i18n.sh update
+bash python/example/i18n/build_i18n.sh update
 
 # Compile .ts into .qm
-bash example/i18n/build_i18n.sh release
+bash python/example/i18n/build_i18n.sh release
 ```
 
 Underneath it calls the system Qt tools `lupdate` / `lrelease`. The UI is
@@ -459,7 +459,7 @@ menu (no restart required); you can also specify it at startup with
 `--lang <code>`:
 
 ```
-example/i18n/openapi_<lang>.qm
+python/example/i18n/openapi_<lang>.qm
 ```
 
 To add a language: copy the `.ts` and translate → compile with `lrelease` →
@@ -482,7 +482,7 @@ is answered immediately with `EC_ProtoError` and `desc` set to `openapi auth err
 10 s timeout, adjustable via `--timeout` or `request_timeout`.
 
 **Q: Protobuf version error?**
-Run `python src/generate_proto.py` to regenerate, keeping the gencode consistent
+Run `python python/src/generate_proto.py` to regenerate, keeping the gencode consistent
 with the runtime version; this project uses the pure-Python implementation by
 default to avoid C-extension incompatibilities.
 

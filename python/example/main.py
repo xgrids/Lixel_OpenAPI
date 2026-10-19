@@ -3,14 +3,14 @@
 OpenAPI control panel entry point
 
 Run:
-    python example/main.py            # English UI by default
-    python example/main.py --lang zh  # switch to Chinese on startup
+    python python/example/main.py            # English UI by default
+    python python/example/main.py --lang zh  # switch to Chinese on startup
 
 The UI language can also be switched at runtime via the menu "Settings -> Language".
 
 Localization: source text is written in English and wrapped with tr(); the
-translation into Chinese is stored in example/i18n/openapi_zh.ts and compiled to .qm:
-    bash example/i18n/build_i18n.sh release
+translation into Chinese is stored in python/example/i18n/openapi_zh.ts and compiled to .qm:
+    bash python/example/i18n/build_i18n.sh release
 """
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ if _ROOT not in sys.path:
 from src.qt_compat import QApplication, QIcon, run_app  # noqa: E402
 from example.gui.control_panel import ControlPanel  # noqa: E402
 
-# Filled in automatically by the build script (build.sh / build.bat).
+# Filled in automatically by the build script (python/build.sh / python/build.bat).
 APP_VERSION = "V0.0.0"  # Automatically filled in by the build script
 APP_BUILD_TIME = ""  # Automatically filled in by the build script
 

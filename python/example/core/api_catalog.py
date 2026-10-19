@@ -17,7 +17,7 @@ Design principles:
   proto_gen/openapi/aiot_msgs_pb2.py.
 
 Note: name/description/notes are written in English (the source language) and
-translated to Chinese via example/i18n/openapi_zh.ts at display time in the GUI.
+translated to Chinese via python/example/i18n/openapi_zh.ts at display time in the GUI.
 """
 from __future__ import annotations
 

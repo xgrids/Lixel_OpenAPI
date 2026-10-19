@@ -8,6 +8,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"  # proto/ lives here, shared with the C++ client
 IMAGE_NAME="ubuntu18-amd64:latest"
 CONTAINER_NAME="openapi-mqtt-build-$$"
 APP_VERSION="${1:-V0.0.0}"
@@ -32,8 +33,8 @@ docker run --rm \
     -e HOST_UID="$(id -u)" \
     -e HOST_GID="$(id -g)" \
     -e APP_VERSION="${APP_VERSION}" \
-    -v "${SCRIPT_DIR}:/app" \
-    -w /app \
+    -v "${REPO_ROOT}:/repo" \
+    -w /repo/python \
     "${IMAGE_NAME}" \
     bash -c '
 set -e
@@ -44,18 +45,18 @@ pip install --disable-pip-version-check -q \
     "PySide2>=5.15.0" "paho-mqtt>=2.0.0" "grpcio-tools>=1.50.0" nuitka ordered-set
 
 echo "--- Generating Protobuf files (matching the current protobuf runtime version) ---"
-python /app/src/generate_proto.py
+python /repo/python/src/generate_proto.py
 
 echo "--- Writing version and build time ---"
 BUILD_TIME=$(TZ=Asia/Shanghai date "+%Y/%m/%d %H:%M:%S")
-sed -i "s|^APP_VERSION = .*|APP_VERSION = \"${APP_VERSION}\"|" /app/example/main.py
-sed -i "s|^APP_BUILD_TIME = .*|APP_BUILD_TIME = \"${BUILD_TIME}\"|" /app/example/main.py
+sed -i "s|^APP_VERSION = .*|APP_VERSION = \"${APP_VERSION}\"|" /repo/python/example/main.py
+sed -i "s|^APP_BUILD_TIME = .*|APP_BUILD_TIME = \"${BUILD_TIME}\"|" /repo/python/example/main.py
 
 echo "--- Running Nuitka packaging ---"
 python -m nuitka \
     --standalone \
     --onefile \
-    --output-dir=/app/dist \
+    --output-dir=/repo/python/dist \
     --output-filename=OpenAPI-XPanel \
     --enable-plugin=pyside2 \
     --include-package=example \
@@ -70,26 +71,26 @@ python -m nuitka \
     --include-module=google.protobuf.json_format \
     --include-module=google.protobuf.symbol_database \
     --include-module=paho.mqtt.client \
-    --include-data-dir=/app/assets=assets \
-    --include-data-files=/app/example/i18n/openapi_zh.qm=example/i18n/openapi_zh.qm \
-    --include-data-files=/app/fonts.conf=fonts.conf \
-    --linux-icon=/app/assets/icon.png \
+    --include-data-dir=/repo/python/assets=assets \
+    --include-data-files=/repo/python/example/i18n/openapi_zh.qm=example/i18n/openapi_zh.qm \
+    --include-data-files=/repo/python/fonts.conf=fonts.conf \
+    --linux-icon=/repo/python/assets/icon.png \
     --nofollow-import-to=grpc_tools \
     --nofollow-import-to=tkinter \
     --nofollow-import-to=unittest \
     --nofollow-import-to=pytest \
     --assume-yes-for-downloads \
-    /app/example/main.py
+    /repo/python/example/main.py
 
 echo "--- Cleaning intermediate artifacts ---"
-rm -rf /app/dist/main.build /app/dist/main.dist /app/dist/main.onefile-build
+rm -rf /repo/python/dist/main.build /repo/python/dist/main.dist /repo/python/dist/main.onefile-build
 
 echo "--- Restoring version and build time fields ---"
-sed -i "s|^APP_VERSION = .*|APP_VERSION = \"V0.0.0\"  # Automatically filled in by the build script|" /app/example/main.py
-sed -i "s|^APP_BUILD_TIME = .*|APP_BUILD_TIME = \"\"  # Automatically filled in by the build script|" /app/example/main.py
+sed -i "s|^APP_VERSION = .*|APP_VERSION = \"V0.0.0\"  # Automatically filled in by the build script|" /repo/python/example/main.py
+sed -i "s|^APP_BUILD_TIME = .*|APP_BUILD_TIME = \"\"  # Automatically filled in by the build script|" /repo/python/example/main.py
 
 echo "--- Fixing file permissions ---"
-chown -R ${HOST_UID}:${HOST_GID} /app/dist 2>/dev/null || true
+chown -R ${HOST_UID}:${HOST_GID} /repo/python/dist 2>/dev/null || true
 '
 
 echo "[3/3] Checking build result..."

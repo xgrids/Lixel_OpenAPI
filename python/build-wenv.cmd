@@ -55,9 +55,9 @@ if %ERRORLEVEL% neq 0 (
 echo.
 echo ==========================================
 echo  Done!
-echo  Activate (cmd)      : wenv\Scripts\activate
-echo  Activate (Git Bash) : source wenv/Scripts/activate
-echo  Run: python example\main.py
+echo  Activate (cmd)      : %VENV_DIR%\Scripts\activate
+echo  Activate (Git Bash) : source wenv/Scripts/activate  (from the python directory)
+echo  Run: python %SCRIPT_DIR%example\main.py
 echo ==========================================
 
 endlocal

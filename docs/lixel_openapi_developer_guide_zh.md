@@ -114,10 +114,10 @@ with OpenApiClient(opts) as client:
 ### 3.1 Proto 编译
 
 使用项目自带脚本，将 `proto/openapi/aiot_msgs.proto` 编译为 Python 模块
-`src/proto_gen/openapi/aiot_msgs_pb2.py`：
+`python/src/proto_gen/openapi/aiot_msgs_pb2.py`：
 
 ```bash
-python src/generate_proto.py
+python python/src/generate_proto.py
 ```
 
 > 生成使用当前环境的 `grpc_tools.protoc`，确保 gencode 版本与运行时
@@ -268,7 +268,7 @@ Ntrip 相关：`EC_NtripLoginSuccess`、`EC_NtripLogoutSuccess`、
 
 ## 5. core 客户端封装
 
-`example/core` 提供不依赖 Qt 的可复用封装，是二次开发的推荐入口。
+`python/example/core` 提供不依赖 Qt 的可复用封装，是二次开发的推荐入口。
 
 ### 5.1 模块组成
 
@@ -346,12 +346,12 @@ client.subscribe(
 
 ## 6. GUI 控制面板
 
-`example/main.py` 提供图形化控制面板，按功能分组用选项卡展示全部接口，
+`python/example/main.py` 提供图形化控制面板，按功能分组用选项卡展示全部接口，
 每个接口一张卡片，可编辑 JSON 负载发送请求、或订阅上报输出。
 
 ```bash
-python example/main.py                 # 默认英文界面
-python example/main.py --lang zh       # 启动即中文（也可在菜单实时切换）
+python python/example/main.py                 # 默认英文界面
+python python/example/main.py --lang zh       # 启动即中文（也可在菜单实时切换）
 ```
 
 界面结构：
@@ -385,11 +385,11 @@ python example/main.py --lang zh       # 启动即中文（也可在菜单实时
 
 ## 7. 用例脚本
 
-`example/usage/` 下为每个接口提供独立可运行脚本，是最直接的二次开发参考。
+`python/example/usage/` 下为每个接口提供独立可运行脚本，是最直接的二次开发参考。
 全部基于 `OpenApiClient`，不依赖 GUI。
 
 ```bash
-cd example/usage
+cd python/example/usage
 python device_info.py --host 192.168.55.1 --port 1883 --key <你的 OpenAPI Key>
 python modeling.py --project demo --watch 5 --key <你的 OpenAPI Key>
 python heartbeat.py --seconds 15
@@ -398,7 +398,7 @@ python heartbeat.py --seconds 15
 通用参数：`--host/--port/--tls/--username/--password/--key/--timeout`。没有有效
 OpenAPI Key 的请求会被拒绝并返回 `EC_ProtoError`（`openapi auth error`），所以请始终传入 `--key`。`modeling.py` 会等设备真正进入扫描中再开始计 `--watch`，
 停止后还会等设备回到待机，所以一次运行需要一分钟以上（Lixel L2Pro 上 `--watch 10` 实测 71 秒）。
-脚本清单见 `example/usage/README.md`。
+脚本清单见 `python/example/usage/README.md`。
 
 > `lio_pcl.py` 演示点云解压，需额外安装 `pip install lz4 zstandard`；
 > 未安装时脚本会打印提示并跳过点云解码。
@@ -408,21 +408,21 @@ OpenAPI Key 的请求会被拒绝并返回 `EC_ProtoError`（`openapi auth error
 ## 8. 本地化（i18n）
 
 GUI 中所有用户可见的英文源文本均通过 Qt 的 `self.tr()` 包裹，翻译存放于
-`example/i18n/openapi_zh.ts`（源语言 en_US，目标 zh_CN）。
+`python/example/i18n/openapi_zh.ts`（源语言 en_US，目标 zh_CN）。
 
 ```bash
 # 从源码提取待翻译字符串（更新 .ts）
-bash example/i18n/build_i18n.sh update
+bash python/example/i18n/build_i18n.sh update
 
 # 编译 .ts 为 .qm
-bash example/i18n/build_i18n.sh release
+bash python/example/i18n/build_i18n.sh release
 ```
 
 底层调用系统 Qt 工具 `lupdate` / `lrelease`。界面**默认英文**，可在"设置 →
 语言"菜单实时切换（无需重启）；也可用 `--lang <code>` 在启动时指定：
 
 ```
-example/i18n/openapi_<lang>.qm
+python/example/i18n/openapi_<lang>.qm
 ```
 
 新增语言只需：复制 `.ts` 并翻译 → `lrelease` 编译 → 在 `control_panel.py`
@@ -441,7 +441,7 @@ example/i18n/openapi_<lang>.qm
 `request()` 默认 10s 超时，可用 `--timeout` 或 `request_timeout` 调整。
 
 **Q：protobuf 版本报错？**
-运行 `python src/generate_proto.py` 重新生成，保持 gencode 与运行时版本一致；
+运行 `python python/src/generate_proto.py` 重新生成，保持 gencode 与运行时版本一致；
 本项目默认使用纯 Python 实现规避 C 扩展不兼容。
 
 **Q：点云解码失败？**

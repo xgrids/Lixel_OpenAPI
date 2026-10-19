@@ -8,7 +8,7 @@ reference during secondary development. All are based on
 
 ```bash
 # From the project root, after activating the virtual environment
-cd example/usage
+cd python/example/usage
 python device_info.py --host 192.168.55.1 --port 1883 --key <your OpenAPI Key>
 ```
 

@@ -1,186 +1,52 @@
-# lixel_openapi
+# Lixel OpenAPI
 
-Everything needed for secondary development against a Lixel device's OpenAPI,
-which runs over MQTT with protobuf messages.
+Everything needed for secondary development against a Lixel device's OpenAPI, which runs over
+MQTT with protobuf messages. Use it from **Python** or from **C++**.
 
 > English README. 中文版见 [README.zh-CN.md](README.zh-CN.md)。
 
-## Two ways to use the OpenAPI
+```
+Lixel_OpenAPI/
+├── python/     Python: OpenAPI-XPanel GUI, example scripts, a reusable client
+├── cpp/        C++:    client library and examples (preview)
+├── proto/      Shared: the protobuf definition both of them use
+└── docs/       Shared: developer guide and protocol reference
+```
 
-Pick the one that matches your application. Both talk to the device with the same MQTT
-topics and the same protobuf definition in [`proto/`](proto/), and share the documents in
-[`docs/`](docs/).
+## Choose your language
 
-| | **Python** | **C++** |
+| | **[Python](python/README.md)** | **[C++](cpp/README.md)** |
 |---|---|---|
 | What you get | OpenAPI-XPanel GUI, 18 example scripts, a reusable client | A client library and examples |
 | Platforms | Linux, Windows | Linux (preview) |
 | Status | Released (1.0.x) | Preview, the client API is not implemented yet |
-| Where | Repository root: [`example/`](example/), [`src/`](src/) | [`cpp/`](cpp/) |
-| Start here | [Quick start (Python)](#quick-start-python) | [cpp/README.md](cpp/README.md) |
+| Start here | [python/README.md](python/README.md) | [cpp/README.md](cpp/README.md) |
 
-The rest of this page describes the Python way. The C++ way has its own
-[README](cpp/README.md).
+Both talk to the device with the same MQTT topics and the same protobuf definition
+([`proto/openapi/aiot_msgs.proto`](proto/openapi/aiot_msgs.proto)), so what the protocol
+reference describes applies to both.
 
-## Features
+## Documentation (shared)
 
-Python:
+- [`docs/lixel_openapi_developer_guide_en.md`](docs/lixel_openapi_developer_guide_en.md) — developer guide (English)
+- [`docs/lixel_openapi_developer_guide_zh.md`](docs/lixel_openapi_developer_guide_zh.md) — developer guide (Chinese)
+- [`docs/lixel_openapi_protocol_reference_en.md`](docs/lixel_openapi_protocol_reference_en.md) — protocol reference (English)
+- [`docs/lixel_openapi_protocol_reference_zh.md`](docs/lixel_openapi_protocol_reference_zh.md) — protocol reference (Chinese)
 
-- **OpenAPI-XPanel** — a cross-platform GUI control panel to publish requests and
-  subscribe to reports interactively
-- **Usage scripts** — minimal, copy-pasteable examples for each interface
-- **Reusable core** — a Qt-independent OpenAPI/MQTT client and protobuf codec
-- MQTT / MQTTS (TLS) connection to the device
-- Protobuf message encode/decode with JSON templates
-- Interactive publish/subscribe GUI (English / Chinese, switchable at runtime)
-- 18 ready-to-run interface example scripts
-- One-file executable packaging via Nuitka for Linux and Windows
+## Upgrading from 1.0.x
 
-C++ (preview): see [cpp/README.md](cpp/README.md).
+The Python files moved into `python/` so that the two languages sit side by side. The code
+is the same; only the scripts that locate `proto/` or the repository root changed. Prefix the
+old paths with `python/`:
 
-## Project structure
-
-```
-lixel_openapi/
-├── proto/openapi/           # SHARED: Protobuf definitions (aiot_msgs.proto), used by Python and C++
-├── docs/                    # SHARED: Developer guide + protocol reference
-│
-├── cpp/                     # C++: client library, tests (preview), has its own README
-│
-├── example/                 # Python: application and examples
-│   ├── main.py              # OpenAPI-XPanel entry point
-│   ├── core/                # Qt-independent client + protobuf codec
-│   │   ├── api_catalog.py   # Interface catalog (topics, messages, metadata)
-│   │   ├── openapi_client.py# MQTT client with request/response support
-│   │   └── proto_codec.py   # Protobuf <-> JSON codec
-│   ├── gui/                 # PySide GUI (control / publish / subscribe panels)
-│   ├── usage/               # 18 per-interface example scripts
-│   └── i18n/                # Qt translations (.ts / .qm) + build_i18n.sh
-├── src/                     # Python: internal support
-│   ├── qt_compat.py         # PySide2 / PySide6 binding shim
-│   ├── generate_proto.py    # Generates src/proto_gen from proto/
-│   └── proto_gen/           # Generated protobuf modules (do not edit)
-├── assets/                  # Python: application icon (icon.ico / icon.png)
-├── build.sh / build.bat     # Python: Nuitka packaging (Linux / Windows)
-├── build-venv.sh / build-wenv.cmd  # Python: create local dev virtual environments
-└── requirements*.txt        # Python: runtime / packaging dependencies
-```
-
-## Requirements (Python)
-
-- Python 3.8+ (the packaged build targets Python 3.8 for glibc compatibility)
-- Qt binding: **PySide2** on Linux, **PySide6** on Windows
-- `paho-mqtt`, `protobuf`, `grpcio-tools`
-
-Dependency files:
-
-| File | Purpose |
-|------|---------|
-| `requirements.txt` | Common runtime deps (no GUI binding / packaging tools) |
-| `requirements-linux.txt` | Linux run + packaging (PySide2 + nuitka) |
-| `requirements-windows.txt` | Windows run + packaging (PySide6 + nuitka) |
-
-## Quick start (Python)
-
-### Linux
-
-```bash
-# Create a virtual environment and install dependencies
-./build-venv.sh
-
-# Run OpenAPI-XPanel (English UI by default; use --lang zh for Chinese)
-source venv/bin/activate
-python example/main.py
-```
-
-### Windows
-
-```bat
-rem Create a virtual environment and install dependencies
-build-wenv.cmd
-
-rem Run OpenAPI-XPanel
-wenv\Scripts\activate
-python example\main.py
-```
-
-The same steps in Git Bash (MINGW64) — note the `source`, otherwise the
-environment is not activated in the current shell and the system Python is used
-instead, which fails with `No supported Qt binding found`:
-
-```bash
-./build-wenv.cmd
-source wenv/Scripts/activate
-python example/main.py
-```
-
-The GUI language can also be switched at runtime via **Settings → Language**.
-
-## Generating protobuf code (Python)
-
-The generated protobuf modules live under `src/proto_gen/openapi/` and are
-produced from `proto/openapi/aiot_msgs.proto`:
-
-```bash
-python src/generate_proto.py
-```
-
-The dev-environment scripts (`build-venv.sh` / `build-wenv.cmd`) and the build
-scripts run this automatically.
-
-## Building executables (Python GUI)
-
-Nuitka produces a single-file executable named **OpenAPI-XPanel**, using
-`assets/icon` as the application icon.
-
-### Linux (Docker, PySide2)
-
-Builds inside the `ubuntu18-amd64:latest` image for older-glibc compatibility:
-
-```bash
-./build.sh V1.0.0       # version is optional, defaults to V0.0.0
-# Output: dist/OpenAPI-XPanel
-```
-
-### Windows (Nuitka + MSVC, PySide6)
-
-```bat
-build.bat V1.0.0        rem version is optional, defaults to V0.0.0
-rem Output: output\OpenAPI-XPanel.exe
-```
-
-The build scripts stamp `APP_VERSION` / `APP_BUILD_TIME` into `example/main.py`
-before compiling and restore them afterwards.
-
-## Example scripts (Python)
-
-Each script in `example/usage/` demonstrates a single interface and can be run
-directly. They depend only on `example.core` (no Qt).
-
-```bash
-cd example/usage
-python device_info.py --host 192.168.55.1 --port 1883 --key <your OpenAPI Key>
-```
-
-Common parameters: `--host`, `--port`, `--tls`, `--username`, `--password`,
-`--key`, `--timeout`. See [example/usage/README.md](example/usage/README.md)
-for the full list and per-script descriptions.
-
-## Localization
-
-Source strings are written in English and wrapped with `tr()`. The Chinese
-translation lives in `example/i18n/openapi_zh.ts` and is compiled to `.qm`:
-
-```bash
-bash example/i18n/build_i18n.sh release   # compile .ts -> .qm
-```
-
-## Documentation
-
-- `docs/lixel_openapi_developer_guide_en.md` — developer guide (English)
-- `docs/lixel_openapi_developer_guide_zh.md` — developer guide (Chinese)
-- `docs/lixel_openapi_protocol_reference_en.md` — protocol reference (English)
-- `docs/lixel_openapi_protocol_reference_zh.md` — protocol reference (Chinese)
+| 1.0.x | now |
+|-------|-----|
+| `example/main.py` | `python/example/main.py` |
+| `example/usage/` | `python/example/usage/` |
+| `src/generate_proto.py` | `python/src/generate_proto.py` |
+| `build-venv.sh`, `build-wenv.cmd` | `python/build-venv.sh`, `python/build-wenv.cmd` |
+| `build.sh`, `build.bat` | `python/build.sh`, `python/build.bat` |
+| `requirements*.txt` | `python/requirements*.txt` |
 
 ## License
 

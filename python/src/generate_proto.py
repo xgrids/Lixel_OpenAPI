@@ -2,12 +2,12 @@
 """
 Generate Python protobuf modules from the .proto definitions.
 
-Compiles ``proto/openapi/*.proto`` into ``src/proto_gen/openapi/*_pb2.py`` so that
-application code can import them via the stable package path
-``src.proto_gen.openapi``.
+Compiles the shared ``<repo>/proto/openapi/*.proto`` into
+``python/src/proto_gen/openapi/*_pb2.py`` so that application code can import them via
+the stable package path ``src.proto_gen.openapi``.
 
 Run from anywhere:
-    python src/generate_proto.py
+    python python/src/generate_proto.py
 
 Requires ``grpcio-tools`` (provides ``grpc_tools.protoc``) in the current
 environment. The protobuf runtime version used at build time should match the
@@ -19,13 +19,14 @@ import os
 import sys
 
 # Repo layout:
-#   <root>/proto/openapi/aiot_msgs.proto   (source)
-#   <root>/src/proto_gen/openapi/          (generated output)
+#   <repo>/proto/openapi/aiot_msgs.proto        (source, shared with the C++ client)
+#   <repo>/python/src/proto_gen/openapi/        (generated output)
 _THIS = os.path.abspath(__file__)
 _SRC_DIR = os.path.dirname(_THIS)
-_ROOT = os.path.dirname(_SRC_DIR)
+_PYTHON_ROOT = os.path.dirname(_SRC_DIR)  # <repo>/python
+_REPO_ROOT = os.path.dirname(_PYTHON_ROOT)  # <repo>
 
-PROTO_ROOT = os.path.join(_ROOT, "proto")
+PROTO_ROOT = os.path.join(_REPO_ROOT, "proto")
 OUT_ROOT = os.path.join(_SRC_DIR, "proto_gen")
 OUT_PKG_DIR = os.path.join(OUT_ROOT, "openapi")
 

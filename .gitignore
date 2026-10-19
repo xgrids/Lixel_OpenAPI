@@ -4,17 +4,17 @@ wenv/
 __pycache__/
 *.pyc
 
-# protobuf 生成物（由 python src/generate_proto.py 生成，仓库只保留 __init__.py）
-src/proto_gen/**/*_pb2.py
-src/proto_gen/**/*_pb2_grpc.py
+# protobuf 生成物（由 python python/src/generate_proto.py 生成，仓库只保留 __init__.py）
+python/src/proto_gen/**/*_pb2.py
+python/src/proto_gen/**/*_pb2_grpc.py
 
 # Nuitka 构建中间目录
 main.build/
 main.dist/
 main.onefile-build/
 
-# 构建产物：Linux 为 dist/，Windows 为 output/。
-# 体积大且无法 diff，由 build.sh / build.bat 生成，发布时作为 GitHub Release 附件上传
+# 构建产物：Linux 为 python/dist/，Windows 为 python/output/。
+# 体积大且无法 diff，由 python/build.sh / python/build.bat 生成，发布时作为 GitHub Release 附件上传
 dist/
 output/
 *.zip
