@@ -52,6 +52,9 @@ configure_file(
   @ONLY)
 
 add_library(lixel_openapi STATIC
+  src/catalog.cpp
+  src/codec.cpp
+  src/result.cpp
   src/version.cpp
 )
 add_library(LixelOpenApi::lixel_openapi ALIAS lixel_openapi)

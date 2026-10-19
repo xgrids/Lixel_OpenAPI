@@ -33,3 +33,16 @@ target_compile_definitions(test_smoke PRIVATE
   LIXEL_EXPECTED_PROTOBUF_VERSION="${LIXEL_PROTOBUF_VERSION}"
   LIXEL_EXPECTED_VERSION="${PROJECT_VERSION}")
 target_link_libraries(test_smoke PRIVATE lixel::paho PkgConfig::LZ4)
+
+# T2: interface table, JSON codec, status codes.
+lixel_add_test(test_catalog_codec test_catalog_codec.cpp)
+
+# The C++ interface table must not drift from the Python catalog. Needs only Python 3 with the
+# standard library.
+find_package(Python3 COMPONENTS Interpreter QUIET)
+if(Python3_Interpreter_FOUND)
+  add_test(NAME catalog_drift
+           COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/../tools/catalog_tool.py check)
+else()
+  message(STATUS "Python 3 not found: the catalog_drift test is not registered")
+endif()
