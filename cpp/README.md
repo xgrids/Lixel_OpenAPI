@@ -10,7 +10,7 @@ Both use the **same MQTT topics and the same protobuf definition**
 
 ## Status
 
-**Preview, Linux only.** This directory currently contains the build system and the tests that
+**Preview in 1.1.x, Linux only.** This directory currently contains the build system and the tests that
 prove the wire format matches the Python client. The client API (connect, request/response,
 subscribe, point cloud decoding, scan session) is **not implemented yet**. Do not build on it
 before it is announced in a release.

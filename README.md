@@ -19,7 +19,7 @@ Lixel_OpenAPI/
 |---|---|---|
 | What you get | OpenAPI-XPanel GUI, 18 example scripts, a reusable client | A client library and examples |
 | Platforms | Linux, Windows | Linux (preview) |
-| Status | Released (1.0.x) | Preview, the client API is not implemented yet |
+| Status | Released (1.1.x) | Preview in 1.1.x, the client API is not implemented yet |
 | Start here | [python/README.md](python/README.md) | [cpp/README.md](cpp/README.md) |
 
 Both talk to the device with the same MQTT topics and the same protobuf definition

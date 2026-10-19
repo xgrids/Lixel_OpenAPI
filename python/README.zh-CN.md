@@ -116,14 +116,14 @@ Nuitka 会生成名为 **OpenAPI-XPanel** 的单文件可执行程序，并使�
 因为 protobuf 定义在本目录之外的 `proto/` 里：
 
 ```bash
-./python/build.sh V1.0.0       # 版本号可选，默认 V0.0.0
+./python/build.sh V1.1.0       # 版本号可选，默认 V0.0.0
 # 产出：python/dist/OpenAPI-XPanel
 ```
 
 ### Windows（Nuitka + MSVC，PySide6）
 
 ```bat
-python\build.bat V1.0.0        rem 版本号可选，默认 V0.0.0
+python\build.bat V1.1.0        rem 版本号可选，默认 V0.0.0
 rem 产出：python\output\OpenAPI-XPanel.exe
 ```
 

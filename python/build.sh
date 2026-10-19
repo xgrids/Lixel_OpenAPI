@@ -2,7 +2,7 @@
 # OpenAPI-XPanel Docker build & packaging script (Linux) - uses Nuitka + PySide2
 # Reuses the existing image ubuntu18-amd64:latest (for compatibility with older systems' glibc)
 # Usage: ./build.sh [version]   version is optional, defaults to V0.0.0
-#        e.g.: ./build.sh V1.0.0
+#        e.g.: ./build.sh V1.1.0
 # Output: dist/OpenAPI-XPanel
 
 set -e

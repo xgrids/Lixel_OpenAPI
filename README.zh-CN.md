@@ -19,7 +19,7 @@ Lixel_OpenAPI/
 |---|---|---|
 | 提供内容 | OpenAPI-XPanel 图形界面、18 个示例脚本、可复用客户端 | 客户端库与示例 |
 | 平台 | Linux、Windows | Linux（预览） |
-| 状态 | 已发布（1.0.x） | 预览版，客户端接口尚未实现 |
+| 状态 | 已发布（1.1.x） | 1.1.x 中的预览版，客户端接口尚未实现 |
 | 从这里开始 | [python/README.zh-CN.md](python/README.zh-CN.md) | [cpp/README.zh-CN.md](cpp/README.zh-CN.md) |
 
 两种方式使用同一套 MQTT 主题和同一份 protobuf 定义

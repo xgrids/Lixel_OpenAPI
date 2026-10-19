@@ -121,14 +121,14 @@ the whole repository into the container, because the protobuf definition lives i
 outside this directory:
 
 ```bash
-./python/build.sh V1.0.0       # version is optional, defaults to V0.0.0
+./python/build.sh V1.1.0       # version is optional, defaults to V0.0.0
 # Output: python/dist/OpenAPI-XPanel
 ```
 
 ### Windows (Nuitka + MSVC, PySide6)
 
 ```bat
-python\build.bat V1.0.0        rem version is optional, defaults to V0.0.0
+python\build.bat V1.1.0        rem version is optional, defaults to V0.0.0
 rem Output: python\output\OpenAPI-XPanel.exe
 ```
 
