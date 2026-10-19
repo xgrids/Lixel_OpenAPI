@@ -17,8 +17,8 @@ client wrapper, GUI control panel, and example scripts shipped with this project
 ## Table of Contents
 
 1. [Architecture](#1-architecture)
-2. [Connection & Authentication](#2-connection-authentication)
-3. [Message Model & Codec](#3-message-model-codec)
+2. [Connection & Authentication](#2-connection--authentication)
+3. [Message Model & Codec](#3-message-model--codec)
 4. [Interface Catalog](#4-interface-catalog)
 5. [core Client Wrapper](#5-core-client-wrapper)
 6. [GUI Control Panel](#6-gui-control-panel)
