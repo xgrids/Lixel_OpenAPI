@@ -71,7 +71,7 @@ the tested machine (Ubuntu 22.04).
 | `LIXEL_OPENAPI_SANITIZER` | empty, `address`, `thread`, `undefined` | empty | sanitizer for this project's own targets |
 | `LIXEL_OPENAPI_BUILD_TESTS` | `ON`, `OFF` | `ON` when this is the top-level project | build the tests |
 | `LIXEL_OPENAPI_BUILD_EXAMPLES` | `ON`, `OFF` | `ON` when this is the top-level project | build the 18 examples |
-| `LIXEL_E2E_PYTHON` | path | empty | a Python with `paho-mqtt`, `protobuf` and `lz4`; when set, the `examples_e2e` test is registered |
+| `LIXEL_E2E_PYTHON` | path | empty | a Python with `paho-mqtt`, `protobuf`, `grpcio-tools` and `lz4` (`pip install -r python/requirements.txt lz4`); when set, the `examples_e2e` test is registered. It generates the Python message module on its first run |
 
 Ubuntu 22.04 ships protobuf 3.12.4. It can build this project with
 `-DLIXEL_OPENAPI_PROTOBUF_PROVIDER=SYSTEM`, which was verified, but `AUTO` builds the pinned

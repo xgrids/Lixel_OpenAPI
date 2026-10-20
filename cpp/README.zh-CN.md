@@ -65,7 +65,7 @@ ctest --test-dir cpp/build --output-on-failure
 | `LIXEL_OPENAPI_SANITIZER` | 空、`address`、`thread`、`undefined` | 空 | 仅对本项目自己的目标启用 |
 | `LIXEL_OPENAPI_BUILD_TESTS` | `ON`、`OFF` | 作为顶层工程时为 `ON` | 是否构建测试 |
 | `LIXEL_OPENAPI_BUILD_EXAMPLES` | `ON`、`OFF` | 作为顶层工程时为 `ON` | 是否构建 18 个示例 |
-| `LIXEL_E2E_PYTHON` | 路径 | 空 | 装有 `paho-mqtt`、`protobuf`、`lz4` 的 Python；设置后注册 `examples_e2e` 测试 |
+| `LIXEL_E2E_PYTHON` | 路径 | 空 | 装有 `paho-mqtt`、`protobuf`、`grpcio-tools`、`lz4` 的 Python（`pip install -r python/requirements.txt lz4`）；设置后注册 `examples_e2e` 测试，它首次运行时会生成 Python 消息模块 |
 
 Ubuntu 22.04 自带 protobuf 3.12.4，用 `-DLIXEL_OPENAPI_PROTOBUF_PROVIDER=SYSTEM` 可以构建本项目（已验证），
 但 `AUTO` 会改为构建固定版本。

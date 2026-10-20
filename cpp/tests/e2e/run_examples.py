@@ -2,8 +2,9 @@
 """End-to-end test of the 18 C++ examples against a fake device (fake_device.py).
 
 Needs a broker (start it with ../broker/run_with_broker.sh, which sets the LIXEL_TEST_* variables)
-and a Python with paho-mqtt, protobuf and lz4; this script itself uses the standard library only,
-and starts fake_device.py with the same interpreter.
+and a Python with paho-mqtt, protobuf, grpcio-tools (to generate the Python message module when it
+is missing) and lz4; this script itself uses the standard library only, and starts fake_device.py
+with the same interpreter.
 
     bash tests/broker/run_with_broker.sh <python> tests/e2e/run_examples.py \
         --examples-dir build/examples --python-dir ../python
@@ -395,6 +396,20 @@ class DeafToStop(DeviceCase):
                          ["AC_START", "AC_STOP"])
 
 
+def ensure_generated_python_messages(python_dir):
+    """The fake device imports the Python protobuf module, which is generated and not checked in
+    (see .gitignore). Generate it when it is missing, the same way the Python quick start does."""
+    generated = os.path.join(python_dir, "src", "proto_gen", "openapi", "aiot_msgs_pb2.py")
+    if os.path.exists(generated):
+        return
+    script = os.path.join(python_dir, "src", "generate_proto.py")
+    done = subprocess.run([sys.executable, script], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    if done.returncode != 0 or not os.path.exists(generated):
+        raise SystemExit(
+            "cannot generate the Python protobuf module (needs grpcio-tools: pip install "
+            "grpcio-tools):\n" + done.stdout.decode())
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--examples-dir", required=True, help="directory with the built examples")
@@ -402,6 +417,7 @@ def main():
     args, rest = parser.parse_known_args()
     CONFIG["examples_dir"] = os.path.abspath(args.examples_dir)
     CONFIG["python_dir"] = os.path.abspath(args.python_dir)
+    ensure_generated_python_messages(CONFIG["python_dir"])
     unittest.main(argv=[sys.argv[0]] + rest, verbosity=2)
 
 

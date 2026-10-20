@@ -76,8 +76,9 @@ else()
 endif()
 
 # End to end: the 18 examples against a fake device played by the Python client side of this
-# repository. Needs a Python that has paho-mqtt, protobuf and lz4 (pip install -r
-# python/requirements.txt lz4); give it with -DLIXEL_E2E_PYTHON=/path/to/python. Without it the
+# repository. Needs a Python that has paho-mqtt, protobuf, grpcio-tools and lz4 (pip install -r
+# python/requirements.txt lz4); give it with -DLIXEL_E2E_PYTHON=/path/to/python. The Python
+# protobuf module is generated on the first run if it is missing. Without it the
 # test is not registered.
 set(LIXEL_E2E_PYTHON "" CACHE FILEPATH "Python with paho-mqtt, protobuf and lz4, for the examples_e2e test")
 if(LIXEL_E2E_PYTHON AND LIXEL_OPENAPI_BUILD_EXAMPLES AND LIXEL_MOSQUITTO AND LIXEL_MOSQUITTO_PASSWD AND LIXEL_OPENSSL AND Python3_Interpreter_FOUND)
