@@ -8,7 +8,7 @@ MQTT with protobuf messages. Use it from **Python** or from **C++**.
 ```
 Lixel_OpenAPI/
 ├── python/     Python: OpenAPI-XPanel GUI, example scripts, a reusable client
-├── cpp/        C++:    client library and examples (preview)
+├── cpp/        C++:    client library and 18 examples
 ├── proto/      Shared: the protobuf definition both of them use
 └── docs/       Shared: developer guide and protocol reference
 ```
@@ -17,9 +17,9 @@ Lixel_OpenAPI/
 
 | | **[Python](python/README.md)** | **[C++](cpp/README.md)** |
 |---|---|---|
-| What you get | OpenAPI-XPanel GUI, 18 example scripts, a reusable client | A client library and examples |
-| Platforms | Linux, Windows | Linux (preview) |
-| Status | Released (1.1.x) | Preview in 1.1.x, the client API is not implemented yet |
+| What you get | OpenAPI-XPanel GUI, 18 example scripts, a reusable client | A client library and the same 18 examples as command line programs |
+| Platforms | Linux, Windows | Linux |
+| Status | Released (1.1.x) | 1.1.x; verified with tests and one real device, see its README |
 | Start here | [python/README.md](python/README.md) | [cpp/README.md](cpp/README.md) |
 
 Both talk to the device with the same MQTT topics and the same protobuf definition

@@ -8,7 +8,7 @@
 ```
 Lixel_OpenAPI/
 ├── python/     Python：OpenAPI-XPanel 图形界面、示例脚本、可复用客户端
-├── cpp/        C++：   客户端库与示例（预览）
+├── cpp/        C++：   客户端库与 18 个示例
 ├── proto/      共用：  两种方式都使用的 protobuf 定义
 └── docs/       共用：  开发者指南与协议参考
 ```
@@ -17,9 +17,9 @@ Lixel_OpenAPI/
 
 | | **[Python](python/README.zh-CN.md)** | **[C++](cpp/README.zh-CN.md)** |
 |---|---|---|
-| 提供内容 | OpenAPI-XPanel 图形界面、18 个示例脚本、可复用客户端 | 客户端库与示例 |
-| 平台 | Linux、Windows | Linux（预览） |
-| 状态 | 已发布（1.1.x） | 1.1.x 中的预览版，客户端接口尚未实现 |
+| 提供内容 | OpenAPI-XPanel 图形界面、18 个示例脚本、可复用客户端 | 客户端库，以及同样的 18 个示例（命令行程序） |
+| 平台 | Linux、Windows | Linux |
+| 状态 | 已发布（1.1.x） | 1.1.x；经测试和一台真机验证，见其 README |
 | 从这里开始 | [python/README.zh-CN.md](python/README.zh-CN.md) | [cpp/README.zh-CN.md](cpp/README.zh-CN.md) |
 
 两种方式使用同一套 MQTT 主题和同一份 protobuf 定义
