@@ -3,7 +3,7 @@
 # Reuses the existing image ubuntu18-amd64:latest (for compatibility with older systems' glibc)
 # Usage: ./build.sh [version]   version is optional, defaults to V0.0.0
 #        e.g.: ./build.sh V1.1.0
-# Output: dist/OpenAPI-XPanel
+# Output: dist/OpenAPI-XPanel, plus dist/LICENSE.txt and dist/THIRD-PARTY-NOTICES.txt
 
 set -e
 
@@ -96,12 +96,23 @@ chown -R ${HOST_UID}:${HOST_GID} /repo/python/dist 2>/dev/null || true
 echo "[3/3] Checking build result..."
 EXE_PATH="${SCRIPT_DIR}/dist/OpenAPI-XPanel"
 if [ -f "${EXE_PATH}" ]; then
+    # Every release package must ship LICENSE.txt and THIRD-PARTY-NOTICES.txt next to the executable.
+    LICENSE_SRC="${REPO_ROOT}/LICENSE.txt"
+    NOTICES_SRC="${SCRIPT_DIR}/THIRD-PARTY-NOTICES.txt"
+    for f in "${LICENSE_SRC}" "${NOTICES_SRC}"; do
+        if [ ! -f "${f}" ]; then
+            echo "ERROR: required license file not found: ${f}"
+            exit 1
+        fi
+    done
+    cp "${LICENSE_SRC}" "${NOTICES_SRC}" "${SCRIPT_DIR}/dist/"
     SIZE=$(du -h "${EXE_PATH}" | cut -f1)
     echo ""
     echo "=========================================="
     echo " Packaging complete!"
     echo " Output: ${EXE_PATH}"
     echo " Size: ${SIZE}"
+    echo " Also in dist/: LICENSE.txt, THIRD-PARTY-NOTICES.txt"
     echo "=========================================="
 else
     echo "ERROR: Packaging failed, no executable generated"

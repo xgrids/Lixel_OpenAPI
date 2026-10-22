@@ -3,7 +3,7 @@ setlocal enabledelayedexpansion
 
 rem OpenAPI-XPanel Windows packaging script - uses Nuitka(MSVC) + PySide6
 rem Usage: build.bat [version]   version is optional, defaults to V0.0.0
-rem Output: output\OpenAPI-XPanel.exe
+rem Output: output\OpenAPI-XPanel.exe, plus output\LICENSE.txt and output\THIRD-PARTY-NOTICES.txt
 
 set APP_VERSION=%~1
 if "%APP_VERSION%"=="" set APP_VERSION=V0.0.0
@@ -79,12 +79,34 @@ if %BUILD_RESULT% neq 0 (
 
 set EXE=%DIST_DIR%\OpenAPI-XPanel.exe
 if exist "%EXE%" (
+    rem Every release package must ship LICENSE.txt and THIRD-PARTY-NOTICES.txt next to the executable.
+    set LICENSE_SRC=%SCRIPT_DIR%..\LICENSE.txt
+    set NOTICES_SRC=%SCRIPT_DIR%THIRD-PARTY-NOTICES.txt
+    if not exist "!LICENSE_SRC!" (
+        echo ERROR: required license file not found: !LICENSE_SRC!
+        exit /b 1
+    )
+    if not exist "!NOTICES_SRC!" (
+        echo ERROR: required license file not found: !NOTICES_SRC!
+        exit /b 1
+    )
+    copy /Y "!LICENSE_SRC!" "%DIST_DIR%\LICENSE.txt" >nul
+    if !ERRORLEVEL! neq 0 (
+        echo ERROR: failed to copy LICENSE.txt
+        exit /b 1
+    )
+    copy /Y "!NOTICES_SRC!" "%DIST_DIR%\THIRD-PARTY-NOTICES.txt" >nul
+    if !ERRORLEVEL! neq 0 (
+        echo ERROR: failed to copy THIRD-PARTY-NOTICES.txt
+        exit /b 1
+    )
     for %%f in ("%EXE%") do set /a MB=%%~zf / 1048576
     echo.
     echo ==========================================
     echo  Build complete!
     echo  Output: %EXE%
     echo  Size: !MB! MB
+    echo  Also in output\: LICENSE.txt, THIRD-PARTY-NOTICES.txt
     echo ==========================================
 ) else (
     echo ERROR: No exe generated
