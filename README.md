@@ -20,7 +20,7 @@ Lixel_OpenAPI/
 |---|---|---|
 | What you get | 18 example scripts, a reusable client library | A client library and the same 18 examples as command line programs |
 | Platforms | Linux | Linux |
-| Status | Released: 1.1.x. 2.0.0 is in development and not released yet | Released: 1.1.x (verified with tests and one real device, see its README). 2.0.0 is in development and not released yet |
+| Status | Released: 2.0.0 | Released: 2.0.0 (what has been verified is listed in its README) |
 | Start here | [python/README.md](python/README.md) | [cpp/README.md](cpp/README.md) |
 
 Both talk to the device with the same MQTT topics and the same protobuf definition

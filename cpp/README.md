@@ -9,7 +9,7 @@ Both use the **same MQTT topics and the same protobuf definition**
 > 中文版见 [README.zh-CN.md](README.zh-CN.md)。
 
 ## Status
-**2.0.0 (in development, not released), Linux only.** The last released version is 1.1.x. The client library and the 18 command line examples are implemented:
+**Released: 2.0.0, Linux only.** The client library and the 18 command line examples are implemented:
 connect over MQTT or MQTTS, request/response, subscriptions, JSON conversion, point cloud
 decoding and the scan flow. There is no `install` or CMake package export yet: use it with
 `add_subdirectory` (see below).

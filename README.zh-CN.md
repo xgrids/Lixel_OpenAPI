@@ -20,7 +20,7 @@ Lixel_OpenAPI/
 |---|---|---|
 | 提供内容 | 18 个示例脚本、可复用客户端库 | 客户端库，以及同样的 18 个示例（命令行程序） |
 | 平台 | Linux | Linux |
-| 状态 | 已发布：1.1.x。2.0.0 开发中，尚未发布 | 已发布：1.1.x（经测试和一台真机验证，见其 README）。2.0.0 开发中，尚未发布 |
+| 状态 | 已发布：2.0.0 | 已发布：2.0.0（验证情况见其 README） |
 | 从这里开始 | [python/README.zh-CN.md](python/README.zh-CN.md) | [cpp/README.zh-CN.md](cpp/README.zh-CN.md) |
 
 两种方式使用同一套 MQTT 主题和同一份 protobuf 定义
