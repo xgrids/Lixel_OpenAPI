@@ -2,15 +2,15 @@
 """
 OpenAPI control panel entry point
 
-Run:
-    python python/example/main.py            # English UI by default
-    python python/example/main.py --lang zh  # switch to Chinese on startup
+Run (Linux only; see xpanel/README.md for the setup):
+    python xpanel/main.py            # English UI by default
+    python xpanel/main.py --lang zh  # switch to Chinese on startup
 
 The UI language can also be switched at runtime via the menu "Settings -> Language".
 
 Localization: source text is written in English and wrapped with tr(); the
-translation into Chinese is stored in python/example/i18n/openapi_zh.ts and compiled to .qm:
-    bash python/example/i18n/build_i18n.sh release
+translation into Chinese is stored in xpanel/openapi_xpanel/i18n/openapi_zh.ts and compiled to .qm:
+    bash xpanel/openapi_xpanel/i18n/build_i18n.sh release
 """
 from __future__ import annotations
 
@@ -19,17 +19,15 @@ import sys
 
 os.environ.setdefault("PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION", "python")
 
-# Add the project root to the search path, unifying the example.xxx / src.xxx package paths
-_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if _ROOT not in sys.path:
-    sys.path.insert(0, _ROOT)
+# Directory of this file: assets/ sits next to it. The OpenAPI client library comes
+# from the installed package (pip install -e python), so sys.path is not changed.
+_ROOT = os.path.dirname(os.path.abspath(__file__))
 
-from src.qt_compat import QApplication, QIcon, run_app  # noqa: E402
-from example.gui.control_panel import ControlPanel  # noqa: E402
+from PySide6.QtGui import QIcon  # noqa: E402
+from PySide6.QtWidgets import QApplication  # noqa: E402
 
-# Filled in automatically by the build script (python/build.sh / python/build.bat).
-APP_VERSION = "V0.0.0"  # Automatically filled in by the build script
-APP_BUILD_TIME = ""  # Automatically filled in by the build script
+from openapi_xpanel._build_info import APP_VERSION  # noqa: E402
+from openapi_xpanel.gui.control_panel import ControlPanel  # noqa: E402
 
 
 def _asset_dir() -> str:
@@ -69,6 +67,25 @@ def _parse_lang(argv) -> str | None:
     return None
 
 
+def _self_test(window: "ControlPanel") -> int:
+    """Hidden ``--self-test``: print one marker line after the main window is built, then exit.
+
+    Used by the packaging check on a clean system. It neither shows the window nor
+    starts the event loop, so it also works with QT_QPA_PLATFORM=offscreen. Pending
+    events are processed once so that a language chosen with --lang is already applied
+    (Qt delivers the language change as a queued event); with ``--lang zh`` the printed
+    key_label is Chinese only if the .qm file was found.
+    """
+    import PySide6
+
+    QApplication.processEvents()
+    print(
+        "XPANEL_SELF_TEST_OK version=%s qt=%s key_label=%s"
+        % (APP_VERSION, PySide6.__version__, window._key_label.text())
+    )
+    return 0
+
+
 def main() -> int:
     app = QApplication(sys.argv)
     app.setApplicationName("Lixel OpenAPI Control Panel")
@@ -80,8 +97,10 @@ def main() -> int:
     lang = _parse_lang(sys.argv)
     if lang:
         window.set_language(lang)
+    if "--self-test" in sys.argv[1:]:
+        return _self_test(window)
     window.show()
-    return run_app(app)
+    return app.exec()
 
 
 if __name__ == "__main__":

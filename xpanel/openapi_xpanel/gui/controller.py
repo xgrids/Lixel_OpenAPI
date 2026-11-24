@@ -6,10 +6,7 @@ point to the panels, so widgets do not depend on MQTT details directly.
 """
 from __future__ import annotations
 
-try:
-    from example.core import ClientOptions, OpenApiClient, ProtoCodec
-except ImportError:  # pragma: no cover
-    from core import ClientOptions, OpenApiClient, ProtoCodec  # type: ignore
+from example.core import ClientOptions, OpenApiClient, ProtoCodec
 
 
 class PanelController:

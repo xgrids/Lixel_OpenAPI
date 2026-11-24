@@ -15,49 +15,24 @@ localization.
 import json
 from datetime import datetime
 
-try:
-    from src.qt_compat import (
-        QCheckBox,
-        QComboBox,
-        QEvent,
-        QDialog,
-        QDialogButtonBox,
-        QFont,
-        QGroupBox,
-        QHBoxLayout,
-        QLabel,
-        QLineEdit,
-        QListWidget,
-        QPlainTextEdit,
-        QPushButton,
-        QVBoxLayout,
-        QWidget,
-        Signal,
-    )
-except ImportError:  # pragma: no cover
-    from qt_compat import (  # type: ignore
-        QCheckBox,
-        QComboBox,
-        QEvent,
-        QDialog,
-        QDialogButtonBox,
-        QFont,
-        QGroupBox,
-        QHBoxLayout,
-        QLabel,
-        QLineEdit,
-        QListWidget,
-        QPlainTextEdit,
-        QPushButton,
-        QVBoxLayout,
-        QWidget,
-        Signal,
-    )
+from PySide6.QtCore import QEvent, Signal
+from PySide6.QtGui import QFont
+from PySide6.QtWidgets import (
+    QCheckBox,
+    QComboBox,
+    QDialog,
+    QDialogButtonBox,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QListWidget,
+    QPlainTextEdit,
+    QPushButton,
+    QVBoxLayout,
+)
 
-try:
-    from example.core import message_for_topic, subscribe_topics
-except ImportError:  # pragma: no cover
-    from core import message_for_topic, subscribe_topics  # type: ignore
+from example.core import message_for_topic, subscribe_topics
 
 
 _JSON_TOPICS = {"lixel/application/report/heartbeat"}
@@ -295,10 +270,7 @@ class SubscribePanel(QGroupBox):
             return
         ts, topic, detail = self._received[row]
         dlg = MessageDetailDialog(f"[{ts}] {topic}", detail, self)
-        if hasattr(dlg, "exec"):
-            dlg.exec()
-        else:  # PySide2
-            dlg.exec_()
+        dlg.exec()
 
     def _clear_messages(self) -> None:
         self._msg_list.clear()

@@ -1,0 +1,38 @@
+# Lixel OpenAPI Python client library.
+# Install from a checkout of this repository (Linux):
+#   pip install -e "python[dev]"
+#   python python/src/generate_proto.py
+# The top-level packages are named "example" and "src" (unchanged from 1.x), so only an
+# editable install from the checkout is supported. The generated protobuf module
+# (src/proto_gen/openapi/*_pb2.py) is not produced by pip; run generate_proto.py after installing.
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lixel-openapi"
+version = "2.0.0"
+description = "Python client library and example scripts for the XGRIDS Lixel OpenAPI"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "paho-mqtt>=2.0.0",
+    "protobuf>=5.26.0",
+]
+
+[project.optional-dependencies]
+# grpcio-tools provides grpc_tools.protoc, which generate_proto.py needs.
+dev = [
+    "grpcio-tools>=1.60.0",
+]
+
+[tool.setuptools]
+# Listed explicitly: python/ also holds venv/ and dist/, which setuptools auto-discovery would reject.
+packages = [
+    "example",
+    "example.core",
+    "example.usage",
+    "src",
+    "src.proto_gen",
+    "src.proto_gen.openapi",
+]

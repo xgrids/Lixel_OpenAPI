@@ -1,8 +1,8 @@
 # Lixel OpenAPI — C++ client
 
-The C++ way to talk to a Lixel device over its OpenAPI. The Python way (OpenAPI-XPanel,
-example scripts, reusable client) is in [../python](../python/README.md); the repository
-overview is in [../README.md](../README.md).
+The C++ way to talk to a Lixel device over its OpenAPI. The Python way (example scripts,
+reusable client library) is in [../python](../python/README.md), the OpenAPI-XPanel GUI is in
+[../xpanel](../xpanel/README.md); the repository overview is in [../README.md](../README.md).
 Both use the **same MQTT topics and the same protobuf definition**
 ([`../proto/openapi/aiot_msgs.proto`](../proto/openapi/aiot_msgs.proto)).
 

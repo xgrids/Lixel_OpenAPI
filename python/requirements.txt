@@ -1,7 +1,6 @@
-# Common runtime dependencies (excluding GUI bindings and packaging tools)
-# For packaging, use the platform-specific requirements:
-#   Linux  : requirements-linux.txt   (PySide2 + nuitka)
-#   Windows: requirements-windows.txt (PySide6 + nuitka)
+# Python client library dependencies (Linux).
+# Preferred install, from a checkout of this repository: pip install -e "python[dev]"
+# (the dependency list below mirrors python/pyproject.toml; grpcio-tools is only needed by generate_proto.py)
 paho-mqtt>=2.0.0
 protobuf>=5.26.0
 grpcio-tools>=1.60.0

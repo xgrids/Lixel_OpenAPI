@@ -2,9 +2,9 @@
 # Extract / compile GUI translation files.
 #
 # Usage:
-#   bash python/example/i18n/build_i18n.sh update   # extract translatable strings into .ts
-#   bash python/example/i18n/build_i18n.sh release  # compile .ts into .qm
-#   bash python/example/i18n/build_i18n.sh          # defaults to release
+#   bash xpanel/openapi_xpanel/i18n/build_i18n.sh update   # extract translatable strings into .ts
+#   bash xpanel/openapi_xpanel/i18n/build_i18n.sh release  # compile .ts into .qm
+#   bash xpanel/openapi_xpanel/i18n/build_i18n.sh          # defaults to release
 #
 # The source language is English; the .ts translates English -> Chinese.
 # Requires the system Qt tools lupdate / lrelease (/usr/bin/lupdate, /usr/bin/lrelease).

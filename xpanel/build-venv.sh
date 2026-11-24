@@ -1,14 +1,14 @@
 #!/bin/bash
-# Create a Linux virtual environment and install dependencies (GUI uses PySide2 for compatibility with older systems)
-# Usage: ./build-venv.sh
-
+# Create the XPanel virtual environment (Linux) and install dependencies:
+#   PySide6==6.6.3.1 (xpanel/requirements.txt) and the Python client library (pip install -e python).
+# Usage: ./xpanel/build-venv.sh
 set -e
-
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 VENV_DIR="${SCRIPT_DIR}/venv"
 
 echo "=========================================="
-echo " Create Linux virtual environment (venv)"
+echo " Create XPanel virtual environment (venv)"
 echo "=========================================="
 
 PYTHON=$(command -v python3 || true)
@@ -35,14 +35,16 @@ fi
 
 echo "Installing dependencies..."
 "${VENV_DIR}/bin/pip" install --upgrade pip -q
-"${VENV_DIR}/bin/pip" install -r "${SCRIPT_DIR}/requirements-linux.txt"
+"${VENV_DIR}/bin/pip" install -r "${SCRIPT_DIR}/requirements.txt"
+"${VENV_DIR}/bin/pip" install -e "${REPO_ROOT}/python[dev]"
 
 echo "Generating Protobuf files..."
-"${VENV_DIR}/bin/python" "${SCRIPT_DIR}/src/generate_proto.py"
+"${VENV_DIR}/bin/python" "${REPO_ROOT}/python/src/generate_proto.py"
 
 echo ""
 echo "=========================================="
 echo " Done!"
 echo " Activate: source \"${VENV_DIR}/bin/activate\""
-echo " Run: python \"${SCRIPT_DIR}/example/main.py\""
+echo " Run: python \"${SCRIPT_DIR}/main.py\""
+echo " Note: the Qt xcb plugin needs libxcb-cursor0 and other system libraries, see xpanel/README.md"
 echo "=========================================="

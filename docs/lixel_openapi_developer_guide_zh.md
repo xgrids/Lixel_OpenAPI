@@ -308,7 +308,9 @@ Ntrip 相关：`EC_NtripLoginSuccess`、`EC_NtripLogoutSuccess`、
 
 ## 5. core 客户端封装
 
-`python/example/core` 提供不依赖 Qt 的可复用封装，是二次开发的推荐入口。
+`python/example/core` 提供不依赖 Qt 的可复用封装，是二次开发的推荐入口。在本仓库的检出目录里用
+`pip install -e "python[dev]"` 安装（需要 pip 21.3 及以上，Ubuntu 20.04 上先执行 `pip install --upgrade pip`），再用 `python python/src/generate_proto.py` 生成 protobuf 模块
+（见 `python/README.zh-CN.md`）。
 
 ### 5.1 模块组成
 
@@ -386,12 +388,13 @@ client.subscribe(
 
 ## 6. GUI 控制面板
 
-`python/example/main.py` 提供图形化控制面板，按功能分组用选项卡展示全部接口，
-每个接口一张卡片，可编辑 JSON 负载发送请求、或订阅上报输出。
+`xpanel/main.py`（OpenAPI-XPanel，仅支持 Linux；安装步骤与系统要求见 `xpanel/README.zh-CN.md`）
+提供图形化控制面板，左侧为"发布消息"面板，右侧为"订阅消息"面板
+（布局与 OpenAPI MQTT Debugger 一致）。
 
 ```bash
-python python/example/main.py                 # 默认英文界面
-python python/example/main.py --lang zh       # 启动即中文（也可在菜单实时切换）
+python xpanel/main.py                 # 默认英文界面
+python xpanel/main.py --lang zh       # 启动即中文（也可在菜单实时切换）
 ```
 
 界面结构：
@@ -449,24 +452,24 @@ OpenAPI 授权的设备不需要。其他设备会拒绝没有有效 Key 的请�
 ## 8. 本地化（i18n）
 
 GUI 中所有用户可见的英文源文本均通过 Qt 的 `self.tr()` 包裹，翻译存放于
-`python/example/i18n/openapi_zh.ts`（源语言 en_US，目标 zh_CN）。
+`xpanel/openapi_xpanel/i18n/openapi_zh.ts`（源语言 en_US，目标 zh_CN）。
 
 ```bash
 # 从源码提取待翻译字符串（更新 .ts）
-bash python/example/i18n/build_i18n.sh update
+bash xpanel/openapi_xpanel/i18n/build_i18n.sh update
 
 # 编译 .ts 为 .qm
-bash python/example/i18n/build_i18n.sh release
+bash xpanel/openapi_xpanel/i18n/build_i18n.sh release
 ```
 
 底层调用系统 Qt 工具 `lupdate` / `lrelease`。界面**默认英文**，可在"设置 →
 语言"菜单实时切换（无需重启）；也可用 `--lang <code>` 在启动时指定：
 
 ```
-python/example/i18n/openapi_<lang>.qm
+xpanel/openapi_xpanel/i18n/openapi_<lang>.qm
 ```
 
-新增语言只需：复制 `.ts` 并翻译 → `lrelease` 编译 → 在 `control_panel.py`
+新增语言只需：复制 `.ts` 并翻译 → `lrelease` 编译 → 在 `xpanel/openapi_xpanel/gui/control_panel.py`
 的 `LANGUAGES` 中登记 → 菜单即出现该语言。
 
 ---

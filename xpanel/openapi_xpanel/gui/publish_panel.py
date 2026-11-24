@@ -17,45 +17,24 @@ All user-visible text is wrapped with self.tr() for .ts/.qm localization.
 import json
 import time
 
-try:
-    from src.qt_compat import (
-        QComboBox,
-        QEvent,
-        QFont,
-        QGroupBox,
-        QHBoxLayout,
-        QLabel,
-        QPlainTextEdit,
-        QPushButton,
-        QVBoxLayout,
-    )
-except ImportError:  # pragma: no cover
-    from qt_compat import (  # type: ignore
-        QComboBox,
-        QEvent,
-        QFont,
-        QGroupBox,
-        QHBoxLayout,
-        QLabel,
-        QPlainTextEdit,
-        QPushButton,
-        QVBoxLayout,
-    )
+from PySide6.QtCore import QEvent
+from PySide6.QtGui import QFont
+from PySide6.QtWidgets import (
+    QComboBox,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QPlainTextEdit,
+    QPushButton,
+    QVBoxLayout,
+)
 
-try:
-    from example.core import (
-        interface_for_topic,
-        message_for_topic,
-        publish_topics,
-        request_messages,
-    )
-except ImportError:  # pragma: no cover
-    from core import (  # type: ignore
-        interface_for_topic,
-        message_for_topic,
-        publish_topics,
-        request_messages,
-    )
+from example.core import (
+    interface_for_topic,
+    message_for_topic,
+    publish_topics,
+    request_messages,
+)
 
 
 class PublishPanel(QGroupBox):

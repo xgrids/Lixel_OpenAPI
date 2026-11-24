@@ -7,7 +7,8 @@ MQTT with protobuf messages. Use it from **Python** or from **C++**.
 
 ```
 Lixel_OpenAPI/
-├── python/     Python: OpenAPI-XPanel GUI, example scripts, a reusable client
+├── python/     Python: example scripts and a reusable client library
+├── xpanel/     OpenAPI-XPanel GUI (Linux only)
 ├── cpp/        C++:    client library and 18 examples
 ├── proto/      Shared: the protobuf definition both of them use
 └── docs/       Shared: developer guide and protocol reference
@@ -17,14 +18,19 @@ Lixel_OpenAPI/
 
 | | **[Python](python/README.md)** | **[C++](cpp/README.md)** |
 |---|---|---|
-| What you get | OpenAPI-XPanel GUI, 18 example scripts, a reusable client | A client library and the same 18 examples as command line programs |
-| Platforms | Linux, Windows | Linux |
+| What you get | 18 example scripts, a reusable client library | A client library and the same 18 examples as command line programs |
+| Platforms | Linux | Linux |
 | Status | Released: 1.1.x. 2.0.0 is in development and not released yet | Released: 1.1.x (verified with tests and one real device, see its README). 2.0.0 is in development and not released yet |
 | Start here | [python/README.md](python/README.md) | [cpp/README.md](cpp/README.md) |
 
 Both talk to the device with the same MQTT topics and the same protobuf definition
 ([`proto/openapi/aiot_msgs.proto`](proto/openapi/aiot_msgs.proto)), so what the protocol
 reference describes applies to both.
+
+The graphical control panel **OpenAPI-XPanel** is in [`xpanel/`](xpanel/README.md). It runs on
+Ubuntu 20.04 / 22.04 / 24.04 (x86_64) and uses the Python client library as a package dependency.
+The system libraries it needs (`libxcb-cursor0` and other Qt runtime libraries) are listed in
+[`xpanel/README.md`](xpanel/README.md).
 
 ## Documentation (shared)
 
@@ -46,22 +52,28 @@ needs it. Programs written for 1.x need no change. The wire format is unchanged
 The authorization is granted by XGRIDS; this SDK cannot grant it. See section 2.2 of the developer
 guide ([English](docs/lixel_openapi_developer_guide_en.md), [中文](docs/lixel_openapi_developer_guide_zh.md)).
 
+From 2.0.0 the Python client and OpenAPI-XPanel support Linux only: the Windows build scripts are
+removed, OpenAPI-XPanel moved to `xpanel/`, and its Qt binding is PySide6 only.
+
 Version 2.0.0 has not been verified on a real device yet.
 
 ## Upgrading from 1.0.x
 
-The Python files moved into `python/` so that the two languages sit side by side. The code
-is the same; only the scripts that locate `proto/` or the repository root changed. Prefix the
-old paths with `python/`:
+The Python files moved into `python/` so that the two languages sit side by side, and the
+graphical control panel moved out of `python/` into `xpanel/`. The client code is the same; only
+the scripts that locate `proto/` or the repository root changed. Install the client library with
+`pip install -e python`. Where the old paths went:
 
 | 1.0.x | now |
 |-------|-----|
-| `example/main.py` | `python/example/main.py` |
+| `example/main.py` | `xpanel/main.py` |
 | `example/usage/` | `python/example/usage/` |
 | `src/generate_proto.py` | `python/src/generate_proto.py` |
-| `build-venv.sh`, `build-wenv.cmd` | `python/build-venv.sh`, `python/build-wenv.cmd` |
-| `build.sh`, `build.bat` | `python/build.sh`, `python/build.bat` |
-| `requirements*.txt` | `python/requirements*.txt` |
+| `build-venv.sh` | `xpanel/build-venv.sh` |
+| `build.sh` | `xpanel/build.sh` |
+| `requirements.txt` | `python/requirements.txt` |
+| `requirements-linux.txt` | `xpanel/requirements.txt` |
+| the Windows build scripts and Windows requirements file | removed (2.0.0 supports Linux only) |
 
 ## License
 

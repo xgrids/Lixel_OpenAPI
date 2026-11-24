@@ -7,7 +7,7 @@ reference during secondary development. All are based on
 ## How to run
 
 ```bash
-# From the project root, after activating the virtual environment
+# From the project root, after activating the virtual environment in which `pip install -e python` was run
 cd python/example/usage
 python device_info.py --host 192.168.55.1 --port 1883
 ```

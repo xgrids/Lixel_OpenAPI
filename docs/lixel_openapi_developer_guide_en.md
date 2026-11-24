@@ -338,7 +338,10 @@ Request-response messages carry error info in the `Error error = 15` field
 ## 5. core Client Wrapper
 
 `python/example/core` provides a reusable, Qt-free wrapper and is the recommended entry
-point for secondary development.
+point for secondary development. Install it from a checkout of this repository with
+`pip install -e "python[dev]"` (needs pip 21.3 or newer; run `pip install --upgrade pip` first
+on Ubuntu 20.04), then generate the protobuf module with
+`python python/src/generate_proto.py` (see `python/README.md`).
 
 ### 5.1 Modules
 
@@ -418,13 +421,14 @@ callback receives a string.
 
 ## 6. GUI Control Panel
 
-`python/example/main.py` provides a graphical control panel with a "Publish" panel on
+`xpanel/main.py` (OpenAPI-XPanel, Linux only; setup and system requirements are in
+`xpanel/README.md`) provides a graphical control panel with a "Publish" panel on
 the left and a "Subscribe" panel on the right (same layout as the OpenAPI MQTT
 Debugger).
 
 ```bash
-python python/example/main.py                 # English UI by default
-python python/example/main.py --lang zh       # Start in Chinese (also switchable in the menu)
+python xpanel/main.py                 # English UI by default
+python xpanel/main.py --lang zh       # Start in Chinese (also switchable in the menu)
 ```
 
 UI structure:
@@ -495,15 +499,15 @@ See `python/example/usage/README.md` for the full list of scripts.
 ## 8. Localization (i18n)
 
 All user-visible English source text in the GUI is wrapped with Qt's `self.tr()`;
-translations are stored in `python/example/i18n/openapi_zh.ts` (source language en_US,
+translations are stored in `xpanel/openapi_xpanel/i18n/openapi_zh.ts` (source language en_US,
 target zh_CN).
 
 ```bash
 # Extract translatable strings from source (update .ts)
-bash python/example/i18n/build_i18n.sh update
+bash xpanel/openapi_xpanel/i18n/build_i18n.sh update
 
 # Compile .ts into .qm
-bash python/example/i18n/build_i18n.sh release
+bash xpanel/openapi_xpanel/i18n/build_i18n.sh release
 ```
 
 Underneath it calls the system Qt tools `lupdate` / `lrelease`. The UI is
@@ -512,11 +516,11 @@ menu (no restart required); you can also specify it at startup with
 `--lang <code>`:
 
 ```
-python/example/i18n/openapi_<lang>.qm
+xpanel/openapi_xpanel/i18n/openapi_<lang>.qm
 ```
 
 To add a language: copy the `.ts` and translate → compile with `lrelease` →
-register it in `LANGUAGES` in `control_panel.py` → it appears in the menu.
+register it in `LANGUAGES` in `xpanel/openapi_xpanel/gui/control_panel.py` → it appears in the menu.
 
 ---
 

@@ -1,8 +1,8 @@
 # Lixel OpenAPI — Python
 
-使用 Lixel 设备 OpenAPI 的 Python 方式：**OpenAPI-XPanel** 图形界面、每个接口一个示例脚本，
-以及可复用的客户端。C++ 方式见 [../cpp](../cpp/README.zh-CN.md)；仓库总览见
-[../README.zh-CN.md](../README.zh-CN.md)。
+使用 Lixel 设备 OpenAPI 的 Python 方式：可复用的客户端库，以及每个接口一个示例脚本。仅支持 Linux。
+图形界面 **OpenAPI-XPanel** 是单独的目录 [../xpanel](../xpanel/README.zh-CN.md)。C++ 方式见
+[../cpp](../cpp/README.zh-CN.md)；仓库总览见 [../README.zh-CN.md](../README.zh-CN.md)。
 
 > 中文 README。English version: [README.md](README.md)。
 
@@ -10,36 +10,28 @@
 
 ## 功能特性
 
-- **OpenAPI-XPanel** —— 跨平台图形化控制面板，可交互式发布请求、订阅上报
 - **示例脚本** —— 每个接口一个可直接复制运行的最小示例
 - **可复用核心** —— 与 Qt 无关的 OpenAPI/MQTT 客户端及 protobuf 编解码器
 - 支持 MQTT / MQTTS (TLS) 连接设备
 - 基于 JSON 模板的 protobuf 消息编解码
-- 交互式发布/订阅图形界面（中英文，运行时可切换）
 - 18 个开箱即用的接口示例脚本
-- 通过 Nuitka 打包为 Linux 与 Windows 单文件可执行程序
+- 在检出的仓库里用 `pip install -e python` 安装
 
 ## 目录结构
 
 ```
 python/
-├── example/                 # 应用与示例
-│   ├── main.py              # OpenAPI-XPanel 入口
+├── pyproject.toml           # 包元数据（pip install -e python）
+├── example/                 # 客户端库与示例
 │   ├── core/                # 与 Qt 无关的客户端 + protobuf 编解码
 │   │   ├── api_catalog.py   # 接口目录（主题、消息、元数据）
 │   │   ├── openapi_client.py# 支持请求/响应的 MQTT 客户端
 │   │   └── proto_codec.py   # Protobuf <-> JSON 编解码
-│   ├── gui/                 # PySide 图形界面（控制 / 发布 / 订阅面板）
-│   ├── usage/               # 18 个按接口划分的示例脚本
-│   └── i18n/                # Qt 翻译文件（.ts / .qm）+ build_i18n.sh
+│   └── usage/               # 18 个按接口划分的示例脚本
 ├── src/                     # 内部支持
-│   ├── qt_compat.py         # PySide2 / PySide6 绑定兼容层
 │   ├── generate_proto.py    # 由 ../proto/ 生成 src/proto_gen
 │   └── proto_gen/           # 生成的 protobuf 模块（请勿手动编辑）
-├── assets/                  # 应用图标（icon.ico / icon.png）
-├── build.sh / build.bat     # Nuitka 打包（Linux / Windows）
-├── build-venv.sh / build-wenv.cmd  # 创建本地开发虚拟环境
-└── requirements*.txt        # 运行 / 打包依赖
+└── requirements.txt         # 运行依赖（与 pyproject.toml 相同的列表）
 ```
 
 protobuf 定义 [`../proto/openapi/aiot_msgs.proto`](../proto/openapi/aiot_msgs.proto) 与
@@ -47,52 +39,26 @@ protobuf 定义 [`../proto/openapi/aiot_msgs.proto`](../proto/openapi/aiot_msgs.
 
 ## 环境要求
 
-- Python 3.8+（打包目标为 Python 3.8，以兼容较旧的 glibc）
-- Qt 绑定：Linux 使用 **PySide2**，Windows 使用 **PySide6**
-- `paho-mqtt`、`protobuf`、`grpcio-tools`
+- Linux，Python 3.8+
+- 可编辑安装需要 pip 21.3 及以上（Ubuntu 20.04 自带 pip 20.0.2，下面的命令会先升级 pip）
+- `paho-mqtt`、`protobuf`（`pip install -e python` 会安装）
+- 生成 protobuf 模块需要 `grpcio-tools`（`dev` 可选依赖会安装）
 
-依赖文件：
+## 安装
 
-| 文件 | 用途 |
-|------|------|
-| `python/requirements.txt` | 通用运行依赖（不含 GUI 绑定 / 打包工具） |
-| `python/requirements-linux.txt` | Linux 运行 + 打包（PySide2 + nuitka） |
-| `python/requirements-windows.txt` | Windows 运行 + 打包（PySide6 + nuitka） |
-
-## 快速开始
-
-### Linux
+在本仓库的检出目录里安装客户端库，然后生成 protobuf 模块（pip 不会生成它）：
 
 ```bash
-# 创建虚拟环境并安装依赖
-./python/build-venv.sh
-
-# 运行 OpenAPI-XPanel（默认英文界面；使用 --lang zh 切换为中文）
+python3 -m venv python/venv
 source python/venv/bin/activate
-python python/example/main.py
+pip install --upgrade pip
+pip install -e "python[dev]"
+python python/src/generate_proto.py
 ```
 
-### Windows
-
-```bat
-rem 创建虚拟环境并安装依赖
-python\build-wenv.cmd
-
-rem 运行 OpenAPI-XPanel
-python\wenv\Scripts\activate
-python python\example\main.py
-```
-
-在 Git Bash（MINGW64）下同样步骤 —— 注意必须加 `source`，否则环境不会在当前
-shell 中生效，实际使用的仍是系统 Python，会报 `No supported Qt binding found`：
-
-```bash
-./python/build-wenv.cmd
-source python/wenv/Scripts/activate
-python python/example/main.py
-```
-
-界面语言也可在运行时通过 **设置 → 语言** 切换。
+导入名与 1.x 相同：`from example.core import ClientOptions, OpenApiClient`，生成的消息位于
+`src.proto_gen.openapi`。`example` 和 `src` 是通用的顶层包名，所以只支持在检出的仓库里做这种
+editable 安装，不要把它装进共用的 `site-packages`。
 
 ## 生成 protobuf 代码
 
@@ -103,37 +69,13 @@ python python/example/main.py
 python python/src/generate_proto.py
 ```
 
-开发环境脚本（`build-venv.sh` / `build-wenv.cmd`）与构建脚本会自动执行该步骤。
-
-## 构建可执行程序
-
-Nuitka 会生成名为 **OpenAPI-XPanel** 的单文件可执行程序，并使用
-`python/assets/icon` 作为应用图标。
-
-### Linux（Docker，PySide2）
-
-在 `ubuntu18-amd64:latest` 镜像中构建，以兼容较旧的 glibc。脚本会把整个仓库挂进容器，
-因为 protobuf 定义在本目录之外的 `proto/` 里：
-
-```bash
-./python/build.sh V2.0.0       # 版本号可选，默认 V0.0.0
-# 产出：python/dist/OpenAPI-XPanel
-```
-
-### Windows（Nuitka + MSVC，PySide6）
-
-```bat
-python\build.bat V2.0.0        rem 版本号可选，默认 V0.0.0
-rem 产出：python\output\OpenAPI-XPanel.exe
-```
-
-构建脚本会在编译前将 `APP_VERSION` / `APP_BUILD_TIME` 写入
-`python/example/main.py`，并在编译后还原。
+`proto/openapi/aiot_msgs.proto` 改动后需要重新执行。
 
 ## 示例脚本
 
 `python/example/usage/` 下的每个脚本演示一个接口，可直接运行，且仅依赖
-`example.core`（不依赖 Qt）。
+`example.core`（不依赖 Qt）。执行过 `pip install -e python` 后可在任意目录运行；在检出的仓库内，
+只要有 `paho-mqtt` 和 `protobuf` 并且已生成 protobuf 模块，不安装也能运行。
 
 ```bash
 cd python/example/usage
@@ -145,14 +87,10 @@ python device_info.py --host 192.168.55.1 --port 1883
 完整列表与各脚本说明见
 [example/usage/README.md](example/usage/README.md)。
 
-## 本地化
+## OpenAPI-XPanel
 
-源文本以英文编写并用 `tr()` 包裹。中文翻译位于
-`python/example/i18n/openapi_zh.ts`，编译为 `.qm`：
-
-```bash
-bash python/example/i18n/build_i18n.sh release   # 编译 .ts -> .qm
-```
+图形化控制面板（发布请求、订阅上报、中英文界面）位于 [../xpanel](../xpanel/README.zh-CN.md)，
+它把本库作为包依赖使用。
 
 ## 文档
 

@@ -1,1 +1,1 @@
-"""Internal support package (Qt binding shim + generated protobuf code)."""
+"""Internal support package (generated protobuf code and the script that generates it)."""

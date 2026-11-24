@@ -10,60 +10,29 @@ language can be switched live from the "Settings" menu (English by default).
 """
 import os
 
-try:
-    from src.qt_compat import (
-        QActionGroup,
-        QApplication,
-        QComboBox,
-        QEvent,
-        QHBoxLayout,
-        QLabel,
-        QLineEdit,
-        QMainWindow,
-        QMessageBox,
-        QPushButton,
-        QSpinBox,
-        QSplitter,
-        QStatusBar,
-        Qt,
-        QTranslator,
-        QVBoxLayout,
-        QWidget,
-    )
-except ImportError:  # pragma: no cover
-    from qt_compat import (  # type: ignore
-        QActionGroup,
-        QApplication,
-        QComboBox,
-        QEvent,
-        QHBoxLayout,
-        QLabel,
-        QLineEdit,
-        QMainWindow,
-        QMessageBox,
-        QPushButton,
-        QSpinBox,
-        QSplitter,
-        QStatusBar,
-        Qt,
-        QTranslator,
-        QVBoxLayout,
-        QWidget,
-    )
+from PySide6.QtCore import QEvent, Qt, QTranslator
+from PySide6.QtGui import QActionGroup
+from PySide6.QtWidgets import (
+    QApplication,
+    QComboBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMainWindow,
+    QMessageBox,
+    QPushButton,
+    QSpinBox,
+    QSplitter,
+    QStatusBar,
+    QVBoxLayout,
+    QWidget,
+)
 
-try:
-    from example.core import ClientOptions
-    from example.gui.controller import PanelController
-    from example.gui.publish_panel import PublishPanel
-    from example.gui.subscribe_panel import SubscribePanel
-except ImportError:  # pragma: no cover
-    from core import ClientOptions  # type: ignore
-    from gui.controller import PanelController  # type: ignore
-    from gui.publish_panel import PublishPanel  # type: ignore
-    from gui.subscribe_panel import SubscribePanel  # type: ignore
-
-
-APP_VERSION = "V0.0.0"  # fallback only; the real version lives in python/example/main.py
+from example.core import ClientOptions
+from openapi_xpanel._build_info import APP_BUILD_TIME, APP_VERSION
+from openapi_xpanel.gui.controller import PanelController
+from openapi_xpanel.gui.publish_panel import PublishPanel
+from openapi_xpanel.gui.subscribe_panel import SubscribePanel
 
 # Supported languages: code -> (menu display name, .qm file or None for the
 # English source language).
@@ -121,26 +90,12 @@ class ControlPanel(QMainWindow):
         self._about_action.triggered.connect(self._show_about)
 
     def _app_version(self) -> str:
-        """Read the version stamped into the entry module by the build script."""
-        try:
-            from example.main import APP_VERSION as _v  # lazy to avoid import cycle
-        except Exception:  # noqa: BLE001
-            try:
-                from main import APP_VERSION as _v  # type: ignore
-            except Exception:  # noqa: BLE001
-                _v = APP_VERSION
-        return _v or APP_VERSION
+        """Return the version stamped into openapi_xpanel/_build_info.py by the build script."""
+        return APP_VERSION or "V0.0.0"
 
     def _app_build_time(self) -> str:
-        """Read the build timestamp stamped into the entry module, if any."""
-        try:
-            from example.main import APP_BUILD_TIME as _t  # lazy import
-        except Exception:  # noqa: BLE001
-            try:
-                from main import APP_BUILD_TIME as _t  # type: ignore
-            except Exception:  # noqa: BLE001
-                _t = ""
-        return _t or ""
+        """Return the build timestamp stamped by the build script (empty when run from source)."""
+        return APP_BUILD_TIME or ""
 
     def _show_about(self) -> None:
         title = self.tr("About")
@@ -173,7 +128,7 @@ class ControlPanel(QMainWindow):
         box.setTextInteractionFlags(
             Qt.TextBrowserInteraction | Qt.LinksAccessibleByMouse
         )
-        box.exec_() if hasattr(box, "exec_") else box.exec()
+        box.exec()
 
     # ---- Language switching -----------------------------------------------
     def set_language(self, lang: str) -> None:

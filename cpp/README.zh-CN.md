@@ -1,7 +1,8 @@
 # Lixel OpenAPI — C++ 客户端
 
-通过 OpenAPI 与 Lixel 设备通信的 C++ 方式。Python 方式（OpenAPI-XPanel、示例脚本、可复用客户端）
-在 [../python](../python/README.zh-CN.md)，仓库总览见 [../README.zh-CN.md](../README.zh-CN.md)。
+通过 OpenAPI 与 Lixel 设备通信的 C++ 方式。Python 方式（示例脚本、可复用客户端库）
+在 [../python](../python/README.zh-CN.md)，OpenAPI-XPanel 图形界面在 [../xpanel](../xpanel/README.zh-CN.md)，
+仓库总览见 [../README.zh-CN.md](../README.zh-CN.md)。
 两种方式使用**同一套 MQTT 主题和同一份 protobuf 定义**
 （[`../proto/openapi/aiot_msgs.proto`](../proto/openapi/aiot_msgs.proto)）。
 
