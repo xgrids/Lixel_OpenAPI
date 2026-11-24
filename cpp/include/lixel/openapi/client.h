@@ -30,8 +30,12 @@ namespace openapi {
 struct ClientOptions {
   TransportOptions transport;
 
-  // Written into the header of every request that has one. Without a valid key the device
-  // answers EC_ProtoError ("openapi auth error") to everything except the heartbeat.
+  // Optional. Leave empty for a device that holds an active OpenAPI authorization: no key is
+  // needed. Set it for a device on the earlier key-based scheme, and for a device whose
+  // authorization is missing or used up. Without a valid key such a device answers
+  // EC_ProtoError ("openapi auth error", or "openapi license exhausted" when the authorization
+  // is used up) to every request, except the heartbeat. When not empty it is written into the
+  // header of every request that has one.
   std::string openapi_key;
   // Written into header.device_id when not empty. Leave empty unless the device was set up to
   // check it: a device that checks answers "device auth error" on a mismatch.

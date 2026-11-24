@@ -121,14 +121,14 @@ the whole repository into the container, because the protobuf definition lives i
 outside this directory:
 
 ```bash
-./python/build.sh V1.1.0       # version is optional, defaults to V0.0.0
+./python/build.sh V2.0.0       # version is optional, defaults to V0.0.0
 # Output: python/dist/OpenAPI-XPanel
 ```
 
 ### Windows (Nuitka + MSVC, PySide6)
 
 ```bat
-python\build.bat V1.1.0        rem version is optional, defaults to V0.0.0
+python\build.bat V2.0.0        rem version is optional, defaults to V0.0.0
 rem Output: python\output\OpenAPI-XPanel.exe
 ```
 
@@ -142,11 +142,13 @@ directly. They depend only on `example.core` (no Qt).
 
 ```bash
 cd python/example/usage
-python device_info.py --host 192.168.55.1 --port 1883 --key <your OpenAPI Key>
+python device_info.py --host 192.168.55.1 --port 1883
 ```
 
 Common parameters: `--host`, `--port`, `--tls`, `--username`, `--password`,
-`--key`, `--timeout`. See [example/usage/README.md](example/usage/README.md)
+`--key` (optional; not needed when the device holds an active OpenAPI authorization),
+`--timeout`.
+See [example/usage/README.md](example/usage/README.md)
 for the full list and per-script descriptions.
 
 ## Localization

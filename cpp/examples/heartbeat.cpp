@@ -1,7 +1,13 @@
 // Example: subscribe to the device heartbeat (heartbeat)
 // - Report topic: lixel/application/report/heartbeat  (JSON text, not protobuf)
 // The payload is a JSON string that can be used for device discovery, for example:
-//   {"DeviceSN":"A256A60000","Timestamp":1697703246.5,"ProtocolVersion":"3.0.0"}
+//   {"DeviceSN":"A256A60000","Timestamp":1697703246.5,"ProtocolVersion":"3.0.0",
+//    "Features":["openapi_license"],"OpenapiLicenseState":"active",
+//    "OpenapiLicenseText":"Authorized"}
+// Features, OpenapiLicenseState and OpenapiLicenseText are sent by firmware that supports
+// OpenAPI authorization; OpenapiLicenseState is none, active or expired and is left out while the
+// device cannot read it. A heartbeat without Features comes from a device on the earlier
+// key-based scheme.
 // The same as python/example/usage/heartbeat.py.
 #include "common.h"
 

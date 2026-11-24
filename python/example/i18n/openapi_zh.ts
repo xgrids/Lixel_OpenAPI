@@ -60,8 +60,12 @@
         <translation>密码</translation>
     </message>
     <message>
-        <source>OpenAPI Key</source>
-        <translation>OpenAPI Key</translation>
+        <source>OpenAPI Key (optional)</source>
+        <translation>OpenAPI Key（可选）</translation>
+    </message>
+    <message>
+        <source>Leave empty for a device that holds an active OpenAPI authorization. Needed for a device on the earlier key-based scheme, and for a device whose authorization is missing or used up.</source>
+        <translation>已获得 OpenAPI 授权的设备无需填写。早期 Key 方案的设备，以及授权缺失或已用完的设备需要填写。</translation>
     </message>
     <message>
         <source>Connect</source>
@@ -147,12 +151,12 @@
         <translation>设备心跳</translation>
     </message>
     <message>
-        <source>Device heartbeat broadcast. Payload is a JSON string (not protobuf) with DeviceSN / Timestamp / ProtocolVersion. Useful for device discovery.</source>
-        <translation>设备广播心跳，负载为 JSON 字符串（非 protobuf），包含 DeviceSN / Timestamp / ProtocolVersion。可用于设备发现。</translation>
+        <source>Device heartbeat broadcast. Payload is a JSON string (not protobuf) with DeviceSN / Timestamp / ProtocolVersion, and, on firmware that supports OpenAPI authorization, Features / OpenapiLicenseState / OpenapiLicenseText. Useful for device discovery.</source>
+        <translation>设备广播心跳，负载为 JSON 字符串（非 protobuf），包含 DeviceSN / Timestamp / ProtocolVersion；支持 OpenAPI 授权的固件还包含 Features / OpenapiLicenseState / OpenapiLicenseText。可用于设备发现。</translation>
     </message>
     <message>
-        <source>Payload is JSON text, e.g. {&quot;DeviceSN&quot;:&quot;A256A60000&quot;,&quot;Timestamp&quot;:1697703246.5,&quot;ProtocolVersion&quot;:&quot;3.0.0&quot;}</source>
-        <translation>负载为 JSON 文本，例如 {&quot;DeviceSN&quot;:&quot;A256A60000&quot;,&quot;Timestamp&quot;:1697703246.5,&quot;ProtocolVersion&quot;:&quot;3.0.0&quot;}</translation>
+        <source>Payload is JSON text, e.g. {&quot;DeviceSN&quot;:&quot;A256A60000&quot;,&quot;Timestamp&quot;:1697703246.5,&quot;ProtocolVersion&quot;:&quot;3.0.0&quot;,&quot;Features&quot;:[&quot;openapi_license&quot;],&quot;OpenapiLicenseState&quot;:&quot;active&quot;,&quot;OpenapiLicenseText&quot;:&quot;Authorized&quot;}. OpenapiLicenseState is none, active or expired and is left out while the device cannot read it. A heartbeat without Features comes from a device on the earlier key-based scheme.</source>
+        <translation>负载为 JSON 文本，例如 {&quot;DeviceSN&quot;:&quot;A256A60000&quot;,&quot;Timestamp&quot;:1697703246.5,&quot;ProtocolVersion&quot;:&quot;3.0.0&quot;,&quot;Features&quot;:[&quot;openapi_license&quot;],&quot;OpenapiLicenseState&quot;:&quot;active&quot;,&quot;OpenapiLicenseText&quot;:&quot;Authorized&quot;}。OpenapiLicenseState 为 none、active 或 expired，设备暂时读不到授权状态时省略该字段。心跳没有 Features，就是早期 Key 方案的设备。</translation>
     </message>
     <message>
         <source>Device status report</source>

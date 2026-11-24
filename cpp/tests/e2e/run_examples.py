@@ -42,9 +42,17 @@ def env_int(name):
 
 
 class DeviceCase(unittest.TestCase):
-    """Starts one fake device per test class; `scenario` selects its behaviour."""
+    """Starts one fake device per test class; `scenario` selects its behaviour.
 
+    `license` None: the device behaves like one on the earlier key-based scheme (it accepts only
+    the key KEY). Otherwise it is a device with that OpenAPI authorization state ("none",
+    "active" or "expired"); `device_accepts_key` says whether it is also told the valid key KEY.
+    `example_key` says whether the examples are run with --key KEY.
+    """
     scenario = "normal"
+    license = None
+    device_accepts_key = True
+    example_key = True
 
     @classmethod
     def setUpClass(cls):
@@ -55,7 +63,10 @@ class DeviceCase(unittest.TestCase):
         here = os.path.dirname(os.path.abspath(__file__))
         cls.device = subprocess.Popen(
             [sys.executable, os.path.join(here, "fake_device.py"),
-             "--port", str(env_int("LIXEL_TEST_PLAIN_PORT")), "--key", KEY, "--log", cls.log_path,
+             "--port", str(env_int("LIXEL_TEST_PLAIN_PORT")),
+             *(["--key", KEY] if cls.device_accepts_key else []),
+             *(["--license", cls.license] if cls.license else []),
+             "--log", cls.log_path,
              "--ready-file", cls.ready_path, "--scenario", cls.scenario],
             cwd=CONFIG["python_dir"], env=env, stderr=subprocess.PIPE)
         deadline = time.time() + 20
@@ -79,7 +90,10 @@ class DeviceCase(unittest.TestCase):
     # ---- helpers ----
     def base_args(self, tls=False):
         port = env_int("LIXEL_TEST_TLS_PORT" if tls else "LIXEL_TEST_PLAIN_PORT")
-        return ["--host", "127.0.0.1", "--port", str(port), "--key", KEY, "--timeout", "5"]
+        args = ["--host", "127.0.0.1", "--port", str(port), "--timeout", "5"]
+        if self.example_key:
+            args += ["--key", KEY]
+        return args
 
     def run_example(self, name, *args, base=True, timeout=60, tls=False):
         command = [os.path.join(CONFIG["examples_dir"], name)]
@@ -241,6 +255,9 @@ class NormalDevice(DeviceCase):
         self.assertIn("===== heartbeat =====", out)
         self.assertIn('"DeviceSN": "FAKE-0001"', out)
         self.assertIn('"ProtocolVersion": "3.0.0"', out)
+        # a device on the earlier key-based scheme has none of the authorization fields
+        for field in ("Features", "OpenapiLicenseState", "OpenapiLicenseText"):
+            self.assertNotIn(field, out)
 
     def test_lio_pcl_decodes_the_lz4_block_the_python_side_made(self):
         out, _ = self.assertOk(self.run_example("lio_pcl", "--seconds", "1"))
@@ -352,6 +369,124 @@ class NormalDevice(DeviceCase):
         self.assertEqual(python_names, sorted(EXAMPLES))
         for name in EXAMPLES:
             self.assertTrue(os.access(os.path.join(CONFIG["examples_dir"], name), os.X_OK), name)
+
+
+class ActiveLicenseDevice(DeviceCase):
+    """A device that holds an active OpenAPI authorization: no example is given a key, none is
+    refused. The device knows no valid key, so a key that is given counts as no key."""
+    scenario = "normal"
+    license = "active"
+    device_accepts_key = False
+    example_key = False
+
+    def test_no_example_sends_a_key_unless_it_is_asked_to(self):
+        out, _ = self.assertOk(self.run_example("device_info"))
+        self.assertIn("FAKE-0001", out)
+        header = self.last_request("device_info")["header"]
+        self.assertNotIn("openapi_key", header, "the examples must not invent a key")
+
+    def test_a_key_that_is_given_anyway_does_no_harm(self):
+        self.assertOk(self.run_example("device_info", "--key", "old-key"))
+        self.assertEqual(self.last_request("device_info")["header"]["openapi_key"], "old-key")
+
+    def test_the_heartbeat_reports_the_authorization(self):
+        out, _ = self.assertOk(self.run_example("heartbeat", "--seconds", "1"))
+        for part in ('"Features"', '"openapi_license"', '"OpenapiLicenseState": "active"',
+                     '"OpenapiLicenseText": "Authorized"'):
+            self.assertIn(part, out)
+
+    def test_the_empty_request_examples_work_without_a_key(self):
+        for name in ("get_ntrip_profile", "get_rtk_advance", "modeling_status"):
+            with self.subTest(name):
+                out, _ = self.assertOk(self.run_example(name))
+                self.assertIn("Response =====", out)
+                self.assertNotIn("openapi_key", self.last_request(name)["header"])
+
+    def test_the_interfaces_that_used_to_need_a_key_work_without_one(self):
+        # device_config, set_ntrip_profile and set_rtk_advance are part of the 13 request
+        # interfaces; none of them demands a key from a device with an active authorization.
+        self.assertOk(self.run_example("device_config", "--tz", "Asia/Tokyo"))
+        self.assertNotIn("openapi_key", self.last_request("device_config")["header"])
+        self.assertOk(self.run_example("set_ntrip_profile", "--server", "10.0.0.5",
+                                       "--port2", "2101", "--mount", "MP/1",
+                                       "--ntrip-user", "u", "--ntrip-pass", "p"))
+        self.assertNotIn("openapi_key", self.last_request("set_ntrip_profile")["header"])
+        self.assertOk(self.run_example("set_rtk_advance"))
+        self.assertNotIn("openapi_key", self.last_request("set_rtk_advance")["header"])
+
+    def test_the_other_request_examples_work_without_a_key(self):
+        self.assertOk(self.run_example("device_control"))
+        self.assertOk(self.run_example("project_list"))
+        self.assertOk(self.run_example("measure_point"))
+        self.assertOk(self.run_example("control_point"))
+
+
+class ExpiredLicenseDevice(DeviceCase):
+    """The recording minutes of the authorization are used up: a request without the valid key is
+    refused with "openapi license exhausted", a request with it is served."""
+    scenario = "normal"
+    license = "expired"
+    device_accepts_key = True
+    example_key = False
+
+    def test_no_key_is_refused_as_exhausted_with_exit_status_3(self):
+        rc, out, err = self.run_example("device_info")
+        self.assertEqual(rc, 3, err)
+        self.assertIn("===== DeviceInfoResponse =====", out)
+        self.assertIn("openapi license exhausted", err)
+        self.assertIn("0x32040001", err)
+        self.assertNotIn("openapi auth error", err)
+        self.assertNotIn("FAKE-0001", out)
+
+    def test_a_wrong_key_is_refused_the_same_way(self):
+        rc, _, err = self.run_example("device_info", "--key", "wrong")
+        self.assertEqual(rc, 3, err)
+        self.assertIn("openapi license exhausted", err)
+
+    def test_the_empty_request_examples_are_refused_too(self):
+        for name in ("get_ntrip_profile", "get_rtk_advance", "modeling_status"):
+            with self.subTest(name):
+                rc, _, err = self.run_example(name)
+                self.assertEqual(rc, 3, err)
+                self.assertIn("openapi license exhausted", err)
+
+    def test_the_valid_key_is_served(self):
+        out, _ = self.assertOk(self.run_example("device_info", "--key", KEY))
+        self.assertIn("FAKE-0001", out)
+        self.assertEqual(self.last_request("device_info")["header"]["openapi_key"], KEY)
+
+    def test_the_heartbeat_reports_expired(self):
+        out, _ = self.assertOk(self.run_example("heartbeat", "--seconds", "1"))
+        for part in ('"Features"', '"openapi_license"', '"OpenapiLicenseState": "expired"',
+                     '"OpenapiLicenseText": "Expired"'):
+            self.assertIn(part, out)
+
+
+class NoLicenseDevice(DeviceCase):
+    """The firmware supports authorization but the device has none: a request without the valid
+    key is refused with "openapi auth error", a request with it is served."""
+    scenario = "normal"
+    license = "none"
+    device_accepts_key = True
+    example_key = False
+
+    def test_no_key_is_refused_as_an_auth_error_with_exit_status_3(self):
+        rc, out, err = self.run_example("device_info")
+        self.assertEqual(rc, 3, err)
+        self.assertIn("===== DeviceInfoResponse =====", out)
+        self.assertIn("openapi auth error", err)
+        self.assertIn("0x32040001", err)
+        self.assertNotIn("openapi license exhausted", err)
+
+    def test_the_valid_key_is_served(self):
+        out, _ = self.assertOk(self.run_example("device_info", "--key", KEY))
+        self.assertIn("FAKE-0001", out)
+
+    def test_the_heartbeat_reports_not_authorized(self):
+        out, _ = self.assertOk(self.run_example("heartbeat", "--seconds", "1"))
+        for part in ('"Features"', '"openapi_license"', '"OpenapiLicenseState": "none"',
+                     '"OpenapiLicenseText": "Not authorized"'):
+            self.assertIn(part, out)
 
 
 class BusyDevice(DeviceCase):

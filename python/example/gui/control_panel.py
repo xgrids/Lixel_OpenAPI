@@ -289,7 +289,11 @@ class ControlPanel(QMainWindow):
         self._proto_label.setText(self.tr("Protocol"))
         self._user_label.setText(self.tr("Username"))
         self._pass_label.setText(self.tr("Password"))
-        self._key_label.setText(self.tr("OpenAPI Key"))
+        self._key_label.setText(self.tr("OpenAPI Key (optional)"))
+        self._key_edit.setToolTip(self.tr(
+            "Leave empty for a device that holds an active OpenAPI authorization. "
+            "Needed for a device on the earlier key-based scheme, and for a device "
+            "whose authorization is missing or used up."))
         self._conn_btn.setText(self.tr("Disconnect") if self._connected else self.tr("Connect"))
         if not self._connected:
             self._set_status(self.tr("Disconnected"))

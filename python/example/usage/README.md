@@ -9,10 +9,10 @@ reference during secondary development. All are based on
 ```bash
 # From the project root, after activating the virtual environment
 cd python/example/usage
-python device_info.py --host 192.168.55.1 --port 1883 --key <your OpenAPI Key>
+python device_info.py --host 192.168.55.1 --port 1883
 ```
 
-Requests without a valid OpenAPI Key are rejected with `EC_ProtoError` (`openapi auth error`), so always pass `--key`.
+`--key` is optional: it is not needed when the device holds an active OpenAPI authorization. Any other device rejects requests without a valid key with `EC_ProtoError` (`openapi auth error`, or `openapi license exhausted` when the authorization is used up); for such a device add `--key <your OpenAPI Key>`.
 
 Common connection parameters (available to all scripts):
 
@@ -23,7 +23,7 @@ Common connection parameters (available to all scripts):
 | `--tls` | use MQTTS(TLS) | off |
 | `--username` | MQTT username | empty |
 | `--password` | MQTT password | empty |
-| `--key` | OpenAPI Key | empty |
+| `--key` | OpenAPI Key (optional; not needed for a device with an active OpenAPI authorization) | empty |
 | `--timeout` | request timeout (seconds) | 10 |
 
 Extra parameters of `modeling.py`:

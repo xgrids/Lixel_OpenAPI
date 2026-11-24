@@ -8,10 +8,11 @@
 > English version: [README.md](README.md)。
 
 ## 当前状态
-**1.1.x，仅支持 Linux。** 客户端库和 18 个命令行示例已实现：MQTT/MQTTS 连接、请求/响应、订阅、JSON 转换、
+**2.0.0（开发中，尚未发布），仅支持 Linux。** 最近一个已发布版本是 1.1.x。客户端库和 18 个命令行示例已实现：MQTT/MQTTS 连接、请求/响应、订阅、JSON 转换、
 点云解码、扫描流程。目前没有 `install` 和 CMake 包导出，使用方式见下文的 `add_subdirectory`。
 
-已验证与未验证：
+已验证与未验证。下表是 1.1.x 时留下的记录。对 2.0.0 只重复了构建和完整的 `ctest`（包括现在也覆盖
+不需要 Key 的设备的 `broker_integration` 和 `examples_e2e`）；没有重做 AddressSanitizer 运行和真机测试。
 
 | 已验证 | 方式 |
 |--------|------|
@@ -89,7 +90,7 @@ target_link_libraries(my_app PRIVATE LixelOpenApi::lixel_openapi)
 
 lixel::openapi::ClientOptions options;
 options.transport.host = "192.168.55.1";
-options.openapi_key = "<你的 Key>";
+// options.openapi_key = "<你的 Key>";  // 仅早期 Key 方案的设备需要
 lixel::openapi::Client client(options);
 if (!client.Connect().ok()) return 1;
 
@@ -132,14 +133,15 @@ lixel::openapi::Result r = client.Request("lixel/application/request/device_info
 （`-DLIXEL_OPENAPI_BUILD_EXAMPLES=ON`，默认开），产物在 `cpp/build/examples/`。
 
 ```bash
-./cpp/build/examples/heartbeat --seconds 5                      # 不需要 Key
-./cpp/build/examples/device_info --key <你的 Key>
-./cpp/build/examples/modeling --key <你的 Key> --project demo --watch 8
-./cpp/build/examples/lio_pcl --key <你的 Key> --seconds 20      # 设备扫描期间
+./cpp/build/examples/heartbeat --seconds 5
+./cpp/build/examples/device_info
+./cpp/build/examples/modeling --project demo --watch 8
+./cpp/build/examples/lio_pcl --seconds 20                       # 设备扫描期间
+./cpp/build/examples/device_info --key <你的 Key>               # 仍使用早期 Key 方案的设备
 ```
 
-通用选项：`--host`（默认 `192.168.55.1`）、`--port`、`--tls`、`--username`、`--password`、`--key`、
-`--timeout`，TLS 另有 `--ca-file` 和 `--insecure`（Python 脚本里没有）。其余见 `--help`。退出码：0 成功，
+通用选项：`--host`（默认 `192.168.55.1`）、`--port`、`--tls`、`--username`、`--password`、`--key`（可选，
+设备已获得 OpenAPI 授权时不需要）、`--timeout`，TLS 另有 `--ca-file` 和 `--insecure`（Python 脚本里没有）。其余见 `--help`。退出码：0 成功，
 1 连不上或没有回答，2 选项错误（`modeling`：设备不在待机），3 设备回了错误码（回答照常打印），130 被中断。
 `modeling` 还有更多退出码，写在它的源码头部。
 
@@ -159,8 +161,8 @@ lixel::openapi::Result r = client.Request("lixel/application/request/device_info
 | `test_client`、`test_client_stress` | 27、2 | 请求/响应、订阅、重连、线程安全 |
 | `test_pointcloud` | 16 | Python 一侧生成的帧、损坏和随机输入 |
 | `test_scan` | 24 | 对脚本化设备的扫描流程 |
-| `test_broker`（`broker_integration`） | 13 | MQTT 层对 Mosquitto，明文与 TLS |
-| `tests/e2e/run_examples.py`（`examples_e2e`） | 35 | 18 个示例对假设备 |
+| `test_broker`（`broker_integration`） | 19 | MQTT 层对 Mosquitto，明文与 TLS |
+| `tests/e2e/run_examples.py`（`examples_e2e`） | 49 | 18 个示例对假设备 |
 | `catalog_drift` | 1 | C++ 接口表与 Python 目录一致（`tools/catalog_tool.py check`） |
 
 ## 目录

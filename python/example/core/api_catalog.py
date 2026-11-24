@@ -89,12 +89,18 @@ INTERFACES: list[ApiInterface] = [
         name="Device heartbeat",
         group=GROUP_MONITOR,
         description="Device heartbeat broadcast. Payload is a JSON string (not "
-                    "protobuf) with DeviceSN / Timestamp / ProtocolVersion. "
+                    "protobuf) with DeviceSN / Timestamp / ProtocolVersion, and, "
+                    "on firmware that supports OpenAPI authorization, Features / "
+                    "OpenapiLicenseState / OpenapiLicenseText. "
                     "Useful for device discovery.",
         report=_rpt("lixel/application/report/heartbeat", ""),
         notes="Payload is JSON text, e.g. "
               '{"DeviceSN":"A256A60000","Timestamp":1697703246.5,'
-              '"ProtocolVersion":"3.0.0"}',
+              '"ProtocolVersion":"3.0.0","Features":["openapi_license"],'
+              '"OpenapiLicenseState":"active","OpenapiLicenseText":"Authorized"}. '
+              "OpenapiLicenseState is none, active or expired and is left out while "
+              "the device cannot read it. A heartbeat without Features comes from a "
+              "device on the earlier key-based scheme.",
     ),
     ApiInterface(
         key="device_status",

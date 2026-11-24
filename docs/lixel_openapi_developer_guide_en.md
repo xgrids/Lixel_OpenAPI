@@ -82,26 +82,73 @@ Each product model supports only one of the connection modes (not both):
 > self-signed certificate. When MQTTS is selected in the GUI, enter the
 > username/password provided by the vendor manually.
 
-### 2.2 OpenAPI Key Authentication
+### 2.2 OpenAPI Key (optional)
 
-Most request messages carry an optional `openapi_key` field in the `Header`,
-which the device uses to validate the request. **The OpenAPI Key is provided by
-XGRIDS** — just fill it in when developing; you do not need to generate it
-yourself.
+**Since version 2.0.0, a device that holds an active OpenAPI authorization (`active`) needs
+no OpenAPI Key.** Leave `openapi_key` empty (the default) and the client sends no key. The
+authorization is granted by XGRIDS; this SDK cannot grant it.
 
-- GUI: enter it in the "OpenAPI Key" field of the top connection bar. When you
-  "Load template" for publishing, it is written into `header.openapi_key`
-  automatically.
-- Code: set `ClientOptions.openapi_key`, and `request()` / `publish()` fill it
-  into `header.openapi_key` automatically.
+A device that is still on the earlier key-based scheme (the scheme of versions 1.x) keeps
+working as before: it needs a valid `openapi_key` in the `Header` of every request, which is
+provided by XGRIDS. A valid key is also accepted by every other kind of device, so the same
+program can talk to all of them; set the key only for a device that needs it.
+
+| Device | Without a key (or with a wrong key) | With a valid key |
+|--------|-------------------------------------|------------------|
+| Authorized (`active`) | works | works (not metered) |
+| Authorization used up (`expired`) | `EC_ProtoError`, `desc` = `openapi license exhausted` | works |
+| Supports authorization but not authorized (`none`) | `EC_ProtoError`, `desc` = `openapi auth error` | works |
+| Earlier key-based scheme (the heartbeat has no `Features`) | `EC_ProtoError`, `desc` = `openapi auth error` | works |
+
+A wrong key is treated like no key. In every `EC_ProtoError` case above the device replies with
+that error instead of staying silent, so it is not a timeout.
+
+**Which kind of device is it?** Read the heartbeat (`lixel/application/report/heartbeat`).
+`Features` containing `"openapi_license"` means the firmware supports OpenAPI authorization;
+`OpenapiLicenseState` is then `none`, `active` or `expired` (the field is left out while the
+device cannot read its authorization state). A heartbeat without `Features`, or with a
+`Features` array that does not contain `"openapi_license"`, comes from a device on the earlier
+key-based scheme. `ProtocolVersion` is still `"3.0.0"` and cannot tell the two apart. See
+protocol reference 3.1.
+
+- GUI: the "OpenAPI Key (optional)" field of the top connection bar. Leave it empty for a
+  device that holds an active OpenAPI authorization. When you "Load template" for publishing,
+  a key that was entered is written into `header.openapi_key`; with no key nothing is written.
+- Code: set `ClientOptions.openapi_key` only when a key is needed; `request()` / `publish()`
+  then fill it into `header.openapi_key` automatically.
 
 ```python
 from example.core import ClientOptions, OpenApiClient
 
+# A device that holds an active OpenAPI authorization: no key.
+with OpenApiClient(ClientOptions(host="192.168.55.1")) as client:
+    ...
+
+# A device on the earlier key-based scheme, or one whose authorization is missing or used up:
+# set the key.
 opts = ClientOptions(host="192.168.55.1", openapi_key="<provided by XGRIDS>")
 with OpenApiClient(opts) as client:
     ...  # header.openapi_key is filled automatically
 ```
+
+**Interfaces that need no key.** On a device with an `active` authorization, all 13
+request/response interfaces of section 4 need no key. The Lixel L2Pro has no `data_unpack`
+topic (it does not respond to it, with or without a key), so on a Lixel L2Pro the interfaces
+that work without a key are the other 12.
+
+**Metering.** Only a recording started without a key is metered: a `modeling` request with
+`AC_START` that carries no key uses up recording minutes of the authorization, and a
+recording started with a valid key uses none. Each full 60 seconds uses 1 minute, and the part
+of less than 60 seconds left when the recording ends uses 1 more minute (a 150-second recording
+uses 3 minutes). When the minutes run out, the device stops that recording through the normal
+stop procedure, so the data already recorded is saved as usual, and the authorization state of
+the device becomes `expired`. From then on a request without a key is answered with
+`openapi license exhausted`, while a request with a valid key still works. This SDK cannot
+grant or install an authorization; read the authorization state from the heartbeat.
+
+**Upgrading from 1.x.** Programs written for 1.x need no change: a request with a valid key
+is handled exactly as in 1.x and is not metered. To go without a key, the device must already
+hold an OpenAPI authorization; then stop passing a key (remove `openapi_key=` / `--key`).
 
 ### 2.3 Common Header Fields
 
@@ -114,7 +161,7 @@ The first field of every request/response/report message is usually a `Header`:
 | `scaler` | sint64 | Scale factor (used by point cloud, etc.) |
 | `device_id` | string | Device ID (generated by the device) |
 | `session_id` | string | Session ID (generated by the request/report side) |
-| `openapi_key` | string | API key (optional) |
+| `openapi_key` | string | API key (optional; not needed for a device with an active OpenAPI authorization) |
 
 ---
 
@@ -182,8 +229,11 @@ with `lixel/application/`.
 The heartbeat payload is JSON text, e.g.:
 
 ```json
-{"DeviceSN":"A256A60000","Timestamp":1697703246.5,"ProtocolVersion":"3.0.0"}
+{"DeviceSN":"A256A60000","Timestamp":1697703246.5,"ProtocolVersion":"3.0.0","Features":["openapi_license"],"OpenapiLicenseState":"active","OpenapiLicenseText":"Authorized"}
 ```
+
+`Features`, `OpenapiLicenseState` and `OpenapiLicenseText` are added by firmware that supports
+OpenAPI authorization; see section 2.2 and protocol reference 3.1.
 
 The realtime point cloud `MqttCompressMsg` needs a second decompress/decode:
 
@@ -309,7 +359,7 @@ opts = ClientOptions(
     use_tls=False,          # set True for MQTTS
     username="",
     password="",
-    openapi_key="",         # written into header.openapi_key automatically
+    openapi_key="",         # optional; if set, written into header.openapi_key automatically
     device_id="",
     connect_timeout=10.0,
     request_timeout=10.0,
@@ -384,7 +434,7 @@ UI structure:
     default**), no restart required
   - About: shows the program version injected at build time (`V0.0.0` when run from source)
 - Top connection bar: Host / Port / Protocol (MQTT·MQTTS) / Username / Password /
-  OpenAPI Key / Connect
+  OpenAPI Key (optional) / Connect
   - Default host is `192.168.55.1`
   - Username/Password are shown only when MQTTS is selected; enter the
     credentials provided by the vendor (hidden and cleared when switching back
@@ -422,13 +472,16 @@ most direct reference for secondary development. All are based on
 
 ```bash
 cd python/example/usage
-python device_info.py --host 192.168.55.1 --port 1883 --key <your OpenAPI Key>
-python modeling.py --project demo --watch 5 --key <your OpenAPI Key>
+python device_info.py --host 192.168.55.1 --port 1883
+python modeling.py --project demo --watch 5
 python heartbeat.py --seconds 15
 ```
 
-Common arguments: `--host/--port/--tls/--username/--password/--key/--timeout`. Requests
-without a valid OpenAPI Key are rejected with `EC_ProtoError` (`openapi auth error`), so always pass `--key`.
+Common arguments: `--host/--port/--tls/--username/--password/--key/--timeout`. `--key` is
+optional: a device that holds an active OpenAPI authorization needs none. Any other device
+rejects requests without a valid key with `EC_ProtoError` (`openapi auth error`, or
+`openapi license exhausted` when the authorization is used up); for such a device add
+`--key <your OpenAPI Key>`.
 `modeling.py` waits until the device is really scanning before it starts counting `--watch`,
 and waits for standby after stopping, so a run takes a minute or more (71 s was measured with `--watch 10` on a Lixel L2Pro).
 See `python/example/usage/README.md` for the full list of scripts.
@@ -477,8 +530,11 @@ raises `TimeoutError` on timeout.
 **Q: No response / request timeout?**
 Confirm the request topic matches the message type and the device is in a state that
 can respond. Note that some requests are not answered while the device is in standby
-(for example `modeling_status` and `control_point`). A missing or wrong `openapi_key`
-is answered immediately with `EC_ProtoError` and `desc` set to `openapi auth error`, so it is not a timeout. `request()` defaults to a
+(for example `modeling_status` and `control_point`). A device that has no active OpenAPI
+authorization answers a missing or wrong `openapi_key` with `EC_ProtoError`, so that is not a
+timeout: `desc` = `openapi auth error` for a device on the earlier key-based scheme or one
+that is not authorized, and `desc` = `openapi license exhausted` when the recording minutes of
+its authorization are used up. See section 2.2. `request()` defaults to a
 10 s timeout, adjustable via `--timeout` or `request_timeout`.
 
 **Q: Protobuf version error?**

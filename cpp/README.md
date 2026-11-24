@@ -9,12 +9,15 @@ Both use the **same MQTT topics and the same protobuf definition**
 > 中文版见 [README.zh-CN.md](README.zh-CN.md)。
 
 ## Status
-**1.1.x, Linux only.** The client library and the 18 command line examples are implemented:
+**2.0.0 (in development, not released), Linux only.** The last released version is 1.1.x. The client library and the 18 command line examples are implemented:
 connect over MQTT or MQTTS, request/response, subscriptions, JSON conversion, point cloud
 decoding and the scan flow. There is no `install` or CMake package export yet: use it with
 `add_subdirectory` (see below).
 
-What has been verified, and what has not:
+What has been verified, and what has not. The table below is the record made for 1.1.x. For
+2.0.0 only the build and the full `ctest` run (including `broker_integration` and
+`examples_e2e`, which now also cover devices that need no key) have been repeated; the
+AddressSanitizer run and the real device test have not.
 
 | Verified | How |
 |----------|-----|
@@ -97,7 +100,7 @@ Connect, send a request, read the answer:
 
 lixel::openapi::ClientOptions options;
 options.transport.host = "192.168.55.1";
-options.openapi_key = "<your key>";
+// options.openapi_key = "<your key>";  // only for a device on the earlier key-based scheme
 lixel::openapi::Client client(options);
 if (!client.Connect().ok()) return 1;
 
@@ -147,14 +150,16 @@ options. Build them with the library (`-DLIXEL_OPENAPI_BUILD_EXAMPLES=ON`, on by
 them in `cpp/build/examples/`.
 
 ```bash
-./cpp/build/examples/heartbeat --seconds 5                      # no key needed
-./cpp/build/examples/device_info --key <your key>
-./cpp/build/examples/modeling --key <your key> --project demo --watch 8
-./cpp/build/examples/lio_pcl --key <your key> --seconds 20      # while the device scans
+./cpp/build/examples/heartbeat --seconds 5
+./cpp/build/examples/device_info
+./cpp/build/examples/modeling --project demo --watch 8
+./cpp/build/examples/lio_pcl --seconds 20                       # while the device scans
+./cpp/build/examples/device_info --key <your key>               # device on the earlier key-based scheme
 ```
 
 Common options: `--host` (default `192.168.55.1`), `--port`, `--tls`, `--username`, `--password`,
-`--key`, `--timeout`, and for TLS `--ca-file` and `--insecure` (not in the Python scripts).
+`--key` (optional; not needed when the device holds an active OpenAPI authorization), `--timeout`, and for TLS
+`--ca-file` and `--insecure` (not in the Python scripts).
 `--help` lists the rest. Exit status: 0 success, 1 could not connect or no answer, 2 bad option
 (`modeling`: the device was not in standby), 3 the device answered with an error code (the answer is
 printed anyway), 130 interrupted. `modeling` has more exit codes, listed in its source header.
@@ -176,8 +181,8 @@ it off or format the disk.
 | `test_client`, `test_client_stress` | 27, 2 | request/response, subscriptions, reconnect, thread safety |
 | `test_pointcloud` | 16 | frames made by the Python side, damaged and random input |
 | `test_scan` | 24 | the scan flow against a scripted device |
-| `test_broker` (as `broker_integration`) | 13 | the MQTT layer against Mosquitto, plain and TLS |
-| `tests/e2e/run_examples.py` (as `examples_e2e`) | 35 | the 18 examples against a fake device |
+| `test_broker` (as `broker_integration`) | 19 | the MQTT layer against Mosquitto, plain and TLS |
+| `tests/e2e/run_examples.py` (as `examples_e2e`) | 49 | the 18 examples against a fake device |
 | `catalog_drift` | 1 | the C++ table equals the Python catalog (`tools/catalog_tool.py check`) |
 
 ## Layout

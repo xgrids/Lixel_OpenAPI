@@ -28,7 +28,8 @@ struct TransportOptions {
   // TLS. The device uses a self-signed certificate. By default the server certificate is
   // verified, so a connection to a device only succeeds when ca_file holds that certificate;
   // set verify_server = false to accept any certificate (the connection is then encrypted but
-  // not authenticated, and a man in the middle can read the OpenAPI Key).
+  // not authenticated, and a man in the middle can read the MQTT username and password, the
+  // OpenAPI Key if one is set, and all the data).
   bool verify_server = true;
   std::string ca_file;  // PEM file with the trusted certificate(s); empty: system store
 

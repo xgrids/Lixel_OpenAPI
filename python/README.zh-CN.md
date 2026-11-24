@@ -116,14 +116,14 @@ Nuitka 会生成名为 **OpenAPI-XPanel** 的单文件可执行程序，并使�
 因为 protobuf 定义在本目录之外的 `proto/` 里：
 
 ```bash
-./python/build.sh V1.1.0       # 版本号可选，默认 V0.0.0
+./python/build.sh V2.0.0       # 版本号可选，默认 V0.0.0
 # 产出：python/dist/OpenAPI-XPanel
 ```
 
 ### Windows（Nuitka + MSVC，PySide6）
 
 ```bat
-python\build.bat V1.1.0        rem 版本号可选，默认 V0.0.0
+python\build.bat V2.0.0        rem 版本号可选，默认 V0.0.0
 rem 产出：python\output\OpenAPI-XPanel.exe
 ```
 
@@ -137,11 +137,12 @@ rem 产出：python\output\OpenAPI-XPanel.exe
 
 ```bash
 cd python/example/usage
-python device_info.py --host 192.168.55.1 --port 1883 --key <你的 OpenAPI Key>
+python device_info.py --host 192.168.55.1 --port 1883
 ```
 
-通用参数：`--host`、`--port`、`--tls`、`--username`、`--password`、`--key`、
-`--timeout`。完整列表与各脚本说明见
+通用参数：`--host`、`--port`、`--tls`、`--username`、`--password`、`--key`（可选，
+设备已获得 OpenAPI 授权时不需要）、`--timeout`。
+完整列表与各脚本说明见
 [example/usage/README.md](example/usage/README.md)。
 
 ## 本地化

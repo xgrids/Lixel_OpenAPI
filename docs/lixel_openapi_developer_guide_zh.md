@@ -76,23 +76,61 @@ lixel/<domain>/<type>/<name>
 > MQTTS 使用 TLS，本项目示例默认关闭证书校验（`CERT_NONE` + `tls_insecure`），
 > 适配设备端自签名证书。GUI 选择 MQTTS 时需要手动填写厂商提供的用户名和密码。
 
-### 2.2 OpenAPI Key 鉴权
+### 2.2 OpenAPI Key（可选）
 
-大部分请求消息的 `Header` 中包含可选字段 `openapi_key`，设备端据此校验请求
-是否合法。**OpenAPI Key 由 XGRIDS 提供**，二次开发时直接填写即可，无需自行生成。
+**自 2.0.0 起，已获得 OpenAPI 授权（`active`，已授权）的设备不需要 OpenAPI Key。** 保持
+`openapi_key` 为空（默认值）即可，客户端不会发送 Key。授权由 XGRIDS 授予，本 SDK 不能授予授权。
 
-- GUI：在顶部连接栏的"OpenAPI Key"输入框填写，发布时"加载模板"会自动写入
-  消息的 `header.openapi_key`。
-- 代码：为 `ClientOptions.openapi_key` 赋值，`request()` / `publish()` 会自动
+仍使用早期 Key 方案的设备（1.x 版本所用的方案）行为不变：每个请求的 `Header` 里必须带有效的
+`openapi_key`，该 Key 由 XGRIDS 提供。有效 Key 在其他各类设备上同样可用，所以同一个程序可以同时面对
+这几类设备，只需对需要 Key 的设备设置 Key。
+
+| 设备 | 不带 Key（或 Key 错误） | 带有效 Key |
+|------|--------------------------|------------|
+| 已授权（`active`） | 正常 | 正常（不计量） |
+| 授权已用完（`expired`） | `EC_ProtoError`，`desc` 为 `openapi license exhausted` | 正常 |
+| 支持授权但未授权（`none`） | `EC_ProtoError`，`desc` 为 `openapi auth error` | 正常 |
+| 早期 Key 方案（心跳里没有 `Features`） | `EC_ProtoError`，`desc` 为 `openapi auth error` | 正常 |
+
+Key 错误与不带 Key 等同。以上每种 `EC_ProtoError` 情况下，设备都会返回该错误，而不是保持沉默，所以
+这不是超时。
+
+**怎么判断设备属于哪一种？** 看心跳（`lixel/application/report/heartbeat`）。`Features` 里含
+`"openapi_license"`，表示固件支持 OpenAPI 授权，此时 `OpenapiLicenseState` 为 `none`、`active` 或
+`expired`（设备暂时读不到自己的授权状态时，这个字段会被省略）。心跳没有 `Features`，或者 `Features`
+数组里没有 `"openapi_license"`，就是早期 Key 方案的设备。`ProtocolVersion` 仍为 `"3.0.0"`，不能用来
+区分。详见协议参考 3.1 节。
+
+- GUI：顶部连接栏的"OpenAPI Key（可选）"输入框。已获得 OpenAPI 授权的设备留空即可。发布时"加载模板"
+  会把已填写的 Key 写入 `header.openapi_key`；没有填写时不写入任何内容。
+- 代码：仅在需要 Key 时才为 `ClientOptions.openapi_key` 赋值，`request()` / `publish()` 会自动
   把它填入 `header.openapi_key`。
 
 ```python
 from example.core import ClientOptions, OpenApiClient
 
+# 已获得 OpenAPI 授权的设备：不需要 Key
+with OpenApiClient(ClientOptions(host="192.168.55.1")) as client:
+    ...
+
+# 早期 Key 方案的设备，或授权缺失、已用完的设备：设置 Key
 opts = ClientOptions(host="192.168.55.1", openapi_key="<由 XGRIDS 提供>")
 with OpenApiClient(opts) as client:
     ...  # header.openapi_key 会被自动填充
 ```
+
+**免 Key 的接口。** 在授权状态为 `active` 的设备上，第 4 节的 13 个请求/响应接口都不需要 Key。
+Lixel L2Pro 没有 `data_unpack` 主题（带不带 Key 都没有响应），所以在 L2Pro 上免 Key 可用的是其余
+12 个接口。
+
+**计量。** 只有不带 Key 发起的录制才会计量：不带 Key 的 `modeling` 请求（`AC_START`）开始的录制，
+会消耗授权的录制分钟；带有效 Key 开始的录制不消耗。每满 60 秒消耗 1 分钟，录制结束时不足 60 秒的
+部分再消耗 1 分钟（150 秒的录制消耗 3 分钟）。分钟用完时，设备按正常停止流程停止这次录制，已录制的
+数据照常保存，授权状态随即变为 `expired`。此后不带 Key 的请求会返回 `openapi license exhausted`，带有效
+Key 的请求仍然可用。本 SDK 不能授予或安装授权；授权状态从心跳读取。
+
+**从 1.x 升级。** 为 1.x 编写的程序无需修改：带有效 Key 的请求与 1.x 的处理完全相同，也不计量。要
+免 Key，设备必须已经获得 OpenAPI 授权，然后不再传 Key 即可（去掉 `openapi_key=` / `--key`）。
 
 ### 2.3 Header 通用字段
 
@@ -105,7 +143,7 @@ with OpenApiClient(opts) as client:
 | `scaler` | sint64 | 缩放系数（点云等使用） |
 | `device_id` | string | 设备 ID（设备生成） |
 | `session_id` | string | 会话 ID（请求/上报端生成） |
-| `openapi_key` | string | API 密钥（可选） |
+| `openapi_key` | string | API 密钥（可选；已获得 OpenAPI 授权的设备不需要） |
 
 ---
 
@@ -171,8 +209,10 @@ template = codec.default_json("ModelingRequest")
 心跳负载为 JSON 文本，例如：
 
 ```json
-{"DeviceSN":"A256A60000","Timestamp":1697703246.5,"ProtocolVersion":"3.0.0"}
+{"DeviceSN":"A256A60000","Timestamp":1697703246.5,"ProtocolVersion":"3.0.0","Features":["openapi_license"],"OpenapiLicenseState":"active","OpenapiLicenseText":"Authorized"}
 ```
+
+`Features`、`OpenapiLicenseState`、`OpenapiLicenseText` 三个字段由支持 OpenAPI 授权的固件加入，详见 2.2 节与协议参考 3.1 节。
 
 实时点云 `MqttCompressMsg` 需二次解压解码：
 
@@ -289,7 +329,7 @@ opts = ClientOptions(
     use_tls=False,          # MQTTS 时置 True
     username="",
     password="",
-    openapi_key="",         # 自动写入 header.openapi_key
+    openapi_key="",         # 可选；设置后自动写入 header.openapi_key
     device_id="",
     connect_timeout=10.0,
     request_timeout=10.0,
@@ -359,7 +399,7 @@ python python/example/main.py --lang zh       # 启动即中文（也可在菜�
 - 菜单栏：
   - 设置 → 语言：中英文实时切换（**默认英文**），无需重启
   - 关于：显示构建时注入的程序版本号（从源码直接运行时为 `V0.0.0`）
-- 顶部连接栏：地址 / 端口 / 协议(MQTT·MQTTS) / 用户名 / 密码 / OpenAPI Key / 连接
+- 顶部连接栏：地址 / 端口 / 协议(MQTT·MQTTS) / 用户名 / 密码 / OpenAPI Key（可选） / 连接
   - 默认地址为 `192.168.55.1`
   - 用户名 / 密码仅在选择 MQTTS 协议时显示，需手动填写厂商提供的账号密码
     （切回 MQTT 时隐藏并清空）
@@ -390,13 +430,14 @@ python python/example/main.py --lang zh       # 启动即中文（也可在菜�
 
 ```bash
 cd python/example/usage
-python device_info.py --host 192.168.55.1 --port 1883 --key <你的 OpenAPI Key>
-python modeling.py --project demo --watch 5 --key <你的 OpenAPI Key>
+python device_info.py --host 192.168.55.1 --port 1883
+python modeling.py --project demo --watch 5
 python heartbeat.py --seconds 15
 ```
 
-通用参数：`--host/--port/--tls/--username/--password/--key/--timeout`。没有有效
-OpenAPI Key 的请求会被拒绝并返回 `EC_ProtoError`（`openapi auth error`），所以请始终传入 `--key`。`modeling.py` 会等设备真正进入扫描中再开始计 `--watch`，
+通用参数：`--host/--port/--tls/--username/--password/--key/--timeout`。`--key` 可选：已获得
+OpenAPI 授权的设备不需要。其他设备会拒绝没有有效 Key 的请求并返回 `EC_ProtoError`（`openapi auth error`，
+授权已用完时为 `openapi license exhausted`），对这类设备请加上 `--key <你的 OpenAPI Key>`。`modeling.py` 会等设备真正进入扫描中再开始计 `--watch`，
 停止后还会等设备回到待机，所以一次运行需要一分钟以上（Lixel L2Pro 上 `--watch 10` 实测 71 秒）。
 脚本清单见 `python/example/usage/README.md`。
 
@@ -437,7 +478,7 @@ python/example/i18n/openapi_<lang>.qm
 用户名密码。core 客户端 `connect()` 超时会抛 `TimeoutError`。
 
 **Q：请求无响应/超时？**
-确认请求 topic 与消息类型匹配、设备处于可响应状态。注意：部分请求在设备待机时不会被回复（如 `modeling_status`、`control_point`）。`openapi_key` 缺失或不正确时设备会立即返回 `EC_ProtoError`，`desc` 为 `openapi auth error`，不属于超时。
+确认请求 topic 与消息类型匹配、设备处于可响应状态。注意：部分请求在设备待机时不会被回复（如 `modeling_status`、`control_point`）。没有有效 OpenAPI 授权的设备在 `openapi_key` 缺失或不正确时会返回 `EC_ProtoError`，不属于超时：早期 Key 方案的设备和未授权的设备，`desc` 为 `openapi auth error`；授权的录制分钟已用完时，`desc` 为 `openapi license exhausted`。见 2.2 节。
 `request()` 默认 10s 超时，可用 `--timeout` 或 `request_timeout` 调整。
 
 **Q：protobuf 版本报错？**

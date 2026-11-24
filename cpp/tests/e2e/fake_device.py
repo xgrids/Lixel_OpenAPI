@@ -8,9 +8,17 @@ C++ code makes on both ends of a conversation cannot cancel itself out.
 What it does
   - answers every request on lixel/application/request/<name> on the matching response topic,
     echoing the request header, and appends the decoded request to --log (one JSON per line)
-  - refuses requests whose header.openapi_key is not --key with error 0x32040001
+  - decides each request in the order of the protocol reference, section 2.2: a header.openapi_key
+    equal to --key is always served; any other key counts as no key, and then
+      with --license active    the request is served
+      with --license expired   it is answered with error 0x32040001 "openapi license exhausted"
+      with --license none      it is answered with error 0x32040001 "openapi auth error"
+      with --key only          (a device on the earlier key-based scheme) the same error as none
+    --key and --license can be given together; one of them is required. Metering is not modelled.
   - reports device_status (modeling_state), heartbeat (JSON text), lio_pose, system_error and
-    lio_pcl (LZ4 block in a MqttCompressMsg, 100 points) every 0.2 s
+    lio_pcl (LZ4 block in a MqttCompressMsg, 100 points) every 0.2 s; with --license the
+    heartbeat carries Features, OpenapiLicenseState and OpenapiLicenseText, with --key only it
+    does not
   - runs the scan state machine: AC_START -> starting -> scanning, AC_STOP -> stopping -> standby
   - publishes DataUnpackReport progress 50 and 100 after an accepted data_unpack request
 It is not a model of a real device: timings are short and lio_pcl/lio_pose are sent all the time.
@@ -41,6 +49,7 @@ SUCCESS = 0x12040001
 AUTH_ERROR = 0x32040001
 REJECTED = 0x32040002
 READY, STARTING, SCANNING, STOPPING = 0x1204012C, 0x1204012D, 0x1204012E, 0x1204012F
+LICENSE_TEXT = {"none": "Not authorized", "active": "Authorized", "expired": "Expired"}
 REQ = "lixel/application/request/"
 RSP = "lixel/application/response/"
 RPT = "lixel/application/report/"
@@ -103,8 +112,9 @@ class FakeDevice:
         self.log({"topic": name, "request": req})
         header = req.get("header", {})
         rsp = {"header": header, "error": {"code": SUCCESS, "desc": "success"}}
-        if header.get("openapi_key") != self.args.key:
-            rsp["error"] = {"code": AUTH_ERROR, "desc": "openapi auth error"}
+        refusal = self.refusal(header.get("openapi_key"))
+        if refusal is not None:
+            rsp["error"] = {"code": AUTH_ERROR, "desc": refusal}
             return self.send(RSP + name, response_message, rsp)
         if name == "device_info":
             rsp["device_info"] = {"base_info": {"device_sn": "FAKE-0001"}}
@@ -115,6 +125,16 @@ class FakeDevice:
             threading.Timer(0.2, self.unpack_report, args=(50,)).start()
             threading.Timer(0.5, self.unpack_report, args=(100,)).start()
         self.send(RSP + name, response_message, rsp)
+
+    def refusal(self, key):
+        """Returns the error text when the request is refused, None when it is served."""
+        if self.args.key is not None and key == self.args.key:
+            return None
+        if self.args.license == "active":
+            return None
+        if self.args.license == "expired":
+            return "openapi license exhausted"
+        return "openapi auth error"
 
     def handle_modeling(self, req, rsp):
         """Updates the state machine. Returns False when the request is not to be answered."""
@@ -166,9 +186,13 @@ class FakeDevice:
                 state = self.state
             self.send(RPT + "device_status", "DeviceStatusReport",
                       {"modeling_state": state, "device_sn": "FAKE-0001"})
-            self.send(RPT + "heartbeat", "",
-                      json.dumps({"DeviceSN": "FAKE-0001", "Timestamp": time.time(),
-                                  "ProtocolVersion": "3.0.0"}).encode())
+            heartbeat = {"DeviceSN": "FAKE-0001", "Timestamp": time.time(),
+                         "ProtocolVersion": "3.0.0"}
+            if self.args.license is not None:
+                heartbeat["Features"] = ["openapi_license"]
+                heartbeat["OpenapiLicenseState"] = self.args.license
+                heartbeat["OpenapiLicenseText"] = LICENSE_TEXT[self.args.license]
+            self.send(RPT + "heartbeat", "", json.dumps(heartbeat).encode())
             self.send(RPT + "lio_pose", "LioPoseReport", {"distance": float(count)})
             self.send(RPT + "system_error", "SystemErrorReport",
                       {"error": {"code": 0x32010001, "desc": "fake error"}})
@@ -196,12 +220,18 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--host", default="127.0.0.1")
     p.add_argument("--port", type=int, required=True)
-    p.add_argument("--key", required=True)
+    p.add_argument("--key", help="the one valid OpenAPI key; given alone, behave like a device "
+                                 "on the earlier key-based scheme")
+    p.add_argument("--license", choices=["none", "active", "expired"],
+                   help="behave like a device with this OpenAPI authorization state")
     p.add_argument("--log", required=True)
     p.add_argument("--ready-file", required=True)
     p.add_argument("--scenario", default="normal",
                    choices=["normal", "busy", "reject-start", "silent-start", "silent-stop"])
-    FakeDevice(p.parse_args()).run()
+    args = p.parse_args()
+    if args.key is None and args.license is None:
+        p.error("give --key, --license, or both")
+    FakeDevice(args).run()
 
 
 if __name__ == "__main__":

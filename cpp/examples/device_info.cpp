@@ -15,7 +15,7 @@ int main(int argc, char** argv) {
 
   pbm::DeviceInfoRequest req;
   pbm::DeviceInfoResponse rsp;
-  // Only the header is needed; the client fills in the OpenAPI key.
+  // Only the header is needed; the client fills in the OpenAPI key if one was given.
   return lixel_examples::RunRequest(args, "lixel/application/request/device_info", req,
                                     "lixel/application/response/device_info", &rsp,
                                     "DeviceInfoResponse");

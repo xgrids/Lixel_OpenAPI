@@ -59,7 +59,11 @@ class ClientOptions:
     username: str = ""
     password: str = ""
     client_id: str = ""
-    # OpenAPI key: if set, request() will automatically fill in header.openapi_key
+    # OpenAPI key (optional). Leave empty for a device that holds an active OpenAPI
+    # authorization (no key is needed). Set it for a device on the earlier key-based scheme,
+    # and for a device whose authorization is missing or used up (such a device answers
+    # EC_ProtoError to a request without a valid key); if set, request() fills it into
+    # header.openapi_key automatically.
     openapi_key: str = ""
     device_id: str = ""
     connect_timeout: float = 10.0

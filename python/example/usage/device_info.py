@@ -16,7 +16,7 @@ def main() -> int:
         rsp = client.request(
             req_topic="lixel/application/request/device_info",
             req_message="DeviceInfoRequest",
-            payload={},  # only header is needed; the client auto-fills openapi_key
+            payload={},  # only header is needed; the client fills openapi_key if one is given
             rsp_topic="lixel/application/response/device_info",
             rsp_message="DeviceInfoResponse",
         )

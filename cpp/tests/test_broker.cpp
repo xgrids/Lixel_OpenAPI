@@ -65,11 +65,22 @@ bool WaitFor(Pred pred, milliseconds limit = milliseconds(3000)) {
   return pred();
 }
 
+// What a FakeDevice does with a request that has no valid key.
+enum class Scheme {
+  kEarlyKey,       // the earlier key-based scheme: refused with "openapi auth error"
+  kLicenseNone,    // supports OpenAPI authorization, has none: "openapi auth error"
+  kLicenseActive,  // authorized: served
+  kLicenseExpired  // the authorization is used up: "openapi license exhausted"
+};
+
 // A device simulator on a second client: answers DeviceInfoRequest.
+// A request whose header carries the key "good-key" is always served. Any other key counts as no
+// key, and then `scheme` decides (the order of the protocol reference, section 2.2).
 class FakeDevice {
  public:
-  explicit FakeDevice(ClientOptions o, std::uint32_t code = kSuccess)
-      : client_(std::move(o)), code_(code) {}
+  explicit FakeDevice(ClientOptions o, std::uint32_t code = kSuccess,
+                      Scheme scheme = Scheme::kEarlyKey)
+      : client_(std::move(o)), code_(code), scheme_(scheme) {}
   Result Start() {
     Result r = client_.Connect();
     if (!r.ok()) return r;
@@ -79,8 +90,9 @@ class FakeDevice {
           pbm::DeviceInfoRequest req;
           if (!req.ParseFromString(payload)) return;
           ++requests_;
-          if (!req.header().has_openapi_key() || req.header().openapi_key() != "good-key") {
-            Reply(req, 0x32040001u, "openapi auth error");
+          const char* refusal = Refusal(req);
+          if (refusal != nullptr) {
+            Reply(req, 0x32040001u, refusal);
           } else {
             Reply(req, code_, "success");
           }
@@ -89,6 +101,22 @@ class FakeDevice {
   int requests() const { return requests_; }
 
  private:
+  // The error text when the request is refused, nullptr when it is served.
+  const char* Refusal(const pbm::DeviceInfoRequest& req) const {
+    if (req.header().has_openapi_key() && req.header().openapi_key() == "good-key") {
+      return nullptr;
+    }
+    switch (scheme_) {
+      case Scheme::kLicenseActive:
+        return nullptr;
+      case Scheme::kLicenseExpired:
+        return "openapi license exhausted";
+      case Scheme::kEarlyKey:
+      case Scheme::kLicenseNone:
+        break;
+    }
+    return "openapi auth error";
+  }
   void Reply(const pbm::DeviceInfoRequest& req, std::uint32_t code, const char* desc) {
     pbm::DeviceInfoResponse rsp;
     rsp.mutable_header()->CopyFrom(req.header());
@@ -99,6 +127,7 @@ class FakeDevice {
   }
   Client client_;
   std::uint32_t code_;
+  Scheme scheme_;
   std::atomic<int> requests_{0};
 };
 
@@ -218,6 +247,113 @@ TEST(Broker, AWrongKeyGetsTheDeviceErrorNotATimeout) {
       << "must answer at once, not time out";
 }
 
+// Version 2.0: a device with an active OpenAPI authorization needs no key, so a client without one
+// must work.
+TEST(Broker, NoKeyIsNeededForADeviceWithAnActiveAuthorization) {
+  REQUIRE_BROKER();
+  FakeDevice device(Plain(), kSuccess, Scheme::kLicenseActive);
+  ASSERT_TRUE(device.Start().ok());
+  ClientOptions o = Plain();  // no openapi_key
+  ASSERT_TRUE(o.openapi_key.empty());
+  Client c(o);
+  ASSERT_TRUE(c.Connect().ok());
+  pbm::DeviceInfoRequest req;
+  pbm::DeviceInfoResponse rsp;
+  Result r = c.Request("lixel/application/request/device_info", req,
+                       "lixel/application/response/device_info", &rsp);
+  ASSERT_TRUE(r.ok()) << ErrcName(r.code) << ": " << r.desc;
+  EXPECT_EQ(rsp.device_info().base_info().device_sn(), "SIM-0001");
+  EXPECT_FALSE(rsp.header().has_openapi_key()) << "the client must not invent a key";
+}
+// A wrong key counts as no key, so it does no harm on such a device (a program written for 1.x
+// keeps working).
+TEST(Broker, AWrongKeyIsHarmlessOnADeviceWithAnActiveAuthorization) {
+  REQUIRE_BROKER();
+  FakeDevice device(Plain(), kSuccess, Scheme::kLicenseActive);
+  ASSERT_TRUE(device.Start().ok());
+  ClientOptions o = Plain();
+  o.openapi_key = "some-old-key";
+  Client c(o);
+  ASSERT_TRUE(c.Connect().ok());
+  pbm::DeviceInfoRequest req;
+  pbm::DeviceInfoResponse rsp;
+  Result r = c.Request("lixel/application/request/device_info", req,
+                       "lixel/application/response/device_info", &rsp);
+  EXPECT_TRUE(r.ok()) << ErrcName(r.code) << ": " << r.desc;
+}
+// A device still on the earlier key-based scheme answers a request without a key with a clear
+// error at once (as in 1.x), not with a timeout.
+TEST(Broker, NoKeyOnADeviceOnTheEarlierSchemeGetsTheDeviceError) {
+  REQUIRE_BROKER();
+  FakeDevice device(Plain());  // key-based
+  ASSERT_TRUE(device.Start().ok());
+  Client c(Plain());  // no openapi_key
+  ASSERT_TRUE(c.Connect().ok());
+  pbm::DeviceInfoRequest req;
+  pbm::DeviceInfoResponse rsp;
+  const auto t0 = std::chrono::steady_clock::now();
+  Result r = c.Request("lixel/application/request/device_info", req,
+                       "lixel/application/response/device_info", &rsp);
+  EXPECT_EQ(r.code, Errc::DeviceError);
+  EXPECT_EQ(r.device_code, 0x32040001u);
+  EXPECT_EQ(r.desc, "openapi auth error");
+  EXPECT_LT(std::chrono::steady_clock::now() - t0, milliseconds(1500))
+      << "must answer at once, not time out";
+}
+// A device whose authorization is used up answers a request without a key with a device error
+// whose text says so, at once and not with a timeout.
+TEST(Broker, NoKeyOnADeviceWithAnExhaustedAuthorizationGetsTheLicenseError) {
+  REQUIRE_BROKER();
+  FakeDevice device(Plain(), kSuccess, Scheme::kLicenseExpired);
+  ASSERT_TRUE(device.Start().ok());
+  Client c(Plain());  // no openapi_key
+  ASSERT_TRUE(c.Connect().ok());
+  pbm::DeviceInfoRequest req;
+  pbm::DeviceInfoResponse rsp;
+  const auto t0 = std::chrono::steady_clock::now();
+  Result r = c.Request("lixel/application/request/device_info", req,
+                       "lixel/application/response/device_info", &rsp);
+  EXPECT_EQ(r.code, Errc::DeviceError);
+  EXPECT_EQ(r.device_code, 0x32040001u);
+  EXPECT_EQ(r.desc, "openapi license exhausted");
+  EXPECT_LT(std::chrono::steady_clock::now() - t0, milliseconds(1500))
+      << "must answer at once, not time out";
+}
+// A valid key is served even when the authorization is used up.
+TEST(Broker, AValidKeyIsServedByADeviceWithAnExhaustedAuthorization) {
+  REQUIRE_BROKER();
+  FakeDevice device(Plain(), kSuccess, Scheme::kLicenseExpired);
+  ASSERT_TRUE(device.Start().ok());
+  ClientOptions o = Plain();
+  o.openapi_key = "good-key";
+  Client c(o);
+  ASSERT_TRUE(c.Connect().ok());
+  pbm::DeviceInfoRequest req;
+  pbm::DeviceInfoResponse rsp;
+  Result r = c.Request("lixel/application/request/device_info", req,
+                       "lixel/application/response/device_info", &rsp);
+  ASSERT_TRUE(r.ok()) << ErrcName(r.code) << ": " << r.desc;
+  EXPECT_EQ(rsp.device_info().base_info().device_sn(), "SIM-0001");
+}
+// A device that supports authorization but has none answers a request without a key with the
+// same error as a device on the earlier scheme.
+TEST(Broker, NoKeyOnADeviceWithoutAuthorizationGetsTheAuthError) {
+  REQUIRE_BROKER();
+  FakeDevice device(Plain(), kSuccess, Scheme::kLicenseNone);
+  ASSERT_TRUE(device.Start().ok());
+  Client c(Plain());  // no openapi_key
+  ASSERT_TRUE(c.Connect().ok());
+  pbm::DeviceInfoRequest req;
+  pbm::DeviceInfoResponse rsp;
+  const auto t0 = std::chrono::steady_clock::now();
+  Result r = c.Request("lixel/application/request/device_info", req,
+                       "lixel/application/response/device_info", &rsp);
+  EXPECT_EQ(r.code, Errc::DeviceError);
+  EXPECT_EQ(r.device_code, 0x32040001u);
+  EXPECT_EQ(r.desc, "openapi auth error");
+  EXPECT_LT(std::chrono::steady_clock::now() - t0, milliseconds(1500))
+      << "must answer at once, not time out";
+}
 TEST(Broker, NoDeviceMeansATimeoutAndTheClientKeepsWorking) {
   REQUIRE_BROKER();
   ClientOptions o = Plain();

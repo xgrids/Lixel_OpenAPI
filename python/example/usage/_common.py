@@ -25,7 +25,9 @@ def build_arg_parser(description: str) -> argparse.ArgumentParser:
     parser.add_argument("--tls", action="store_true", help="use MQTTS (TLS)")
     parser.add_argument("--username", default="", help="MQTT username")
     parser.add_argument("--password", default="", help="MQTT password")
-    parser.add_argument("--key", default="", help="OpenAPI Key")
+    parser.add_argument("--key", default="",
+                        help="OpenAPI Key (optional; not needed for a device with an active "
+                             "OpenAPI authorization)")
     parser.add_argument("--timeout", type=float, default=10.0, help="request timeout (seconds)")
     return parser
 

@@ -44,7 +44,7 @@ Args::Args(std::string description) : description_(std::move(description)) {
   AddFlag("tls", "use MQTTS (TLS)");
   AddOption("username", "", "MQTT username");
   AddOption("password", "", "MQTT password");
-  AddOption("key", "", "OpenAPI Key");
+  AddOption("key", "", "OpenAPI Key (optional; not needed for a device with an active OpenAPI authorization)");
   AddOption("timeout", "10", "request timeout (seconds)");
   AddOption("ca-file", "", "PEM file with the device certificate to trust (TLS)");
   AddFlag("insecure", "do not verify the device certificate (TLS)");
@@ -247,7 +247,7 @@ bool ConnectOrReport(Client* client, const Args& args) {
         "hint: the device certificate is self-signed, so it is refused by default. Pass\n"
         "      --ca-file <pem> to trust that certificate, or --insecure to skip the check\n"
         "      (the connection is then encrypted but anybody on the network can pose as\n"
-        "      the device and read the OpenAPI Key).\n");
+        "      the device and read the MQTT account and the data).\n");
   }
   return false;
 }
