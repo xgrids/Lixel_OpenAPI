@@ -172,6 +172,23 @@ INTERFACES: list[ApiInterface] = [
         notes="Supported ActionCmd: AC_USB_MASS, AC_USB_ETHER, AC_DISK_FORMAT, "
               "AC_POWER_OFF, AC_SYSTEM_REBOOT.",
     ),
+    ApiInterface(
+        key="openapi_license",
+        name="Query OpenAPI authorization",
+        group=GROUP_DEVICE,
+        description="Query the OpenAPI authorization state, the authorization code "
+                    "and the remaining recording minutes. No OpenAPI key is needed. "
+                    "Only devices whose heartbeat Features contains "
+                    "\"openapi_license\" reply; other devices do not reply and the "
+                    "request times out.",
+        request=_req("lixel/application/request/openapi_license", "OpenapiLicenseRequest"),
+        response=_rsp("lixel/application/response/openapi_license", "OpenapiLicenseResponse"),
+        notes="Set action to AC_GET_CONFIG, the only action this SDK sends; an action "
+              "the device does not support returns EC_RequestError (unsupported "
+              "action). state is none, active or expired. granted_min "
+              "and remaining_min are -1 for a permanent authorization. This SDK "
+              "cannot grant or install an authorization.",
+    ),
 
     # ==================== Scan Mapping ====================
     ApiInterface(

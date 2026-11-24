@@ -14,7 +14,7 @@
 - **可复用核心** —— 与 Qt 无关的 OpenAPI/MQTT 客户端及 protobuf 编解码器
 - 支持 MQTT / MQTTS (TLS) 连接设备
 - 基于 JSON 模板的 protobuf 消息编解码
-- 18 个开箱即用的接口示例脚本
+- 19 个开箱即用的接口示例脚本
 - 在检出的仓库里用 `pip install -e python` 安装
 
 ## 目录结构
@@ -27,7 +27,7 @@ python/
 │   │   ├── api_catalog.py   # 接口目录（主题、消息、元数据）
 │   │   ├── openapi_client.py# 支持请求/响应的 MQTT 客户端
 │   │   └── proto_codec.py   # Protobuf <-> JSON 编解码
-│   └── usage/               # 18 个按接口划分的示例脚本
+│   └── usage/               # 19 个按接口划分的示例脚本
 ├── src/                     # 内部支持
 │   ├── generate_proto.py    # 由 ../proto/ 生成 src/proto_gen
 │   └── proto_gen/           # 生成的 protobuf 模块（请勿手动编辑）

@@ -100,8 +100,11 @@ program can talk to all of them; set the key only for a device that needs it.
 | Supports authorization but not authorized (`none`) | `EC_ProtoError`, `desc` = `openapi auth error` | works |
 | Earlier key-based scheme (the heartbeat has no `Features`) | `EC_ProtoError`, `desc` = `openapi auth error` | works |
 
-A wrong key is treated like no key. In every `EC_ProtoError` case above the device replies with
-that error instead of staying silent, so it is not a timeout.
+A wrong key is treated like no key. For the 13 request/response interfaces that check the key, in
+every `EC_ProtoError` case above the device replies with that error instead of staying silent, so
+it is not a timeout. `openapi_license` (4.2) is not one of them: it does not check the key, and a
+device whose heartbeat `Features` has no `"openapi_license"` has no such topic, does not respond,
+and the request times out.
 
 **Which kind of device is it?** Read the heartbeat (`lixel/application/report/heartbeat`).
 `Features` containing `"openapi_license"` means the firmware supports OpenAPI authorization;
@@ -132,9 +135,10 @@ with OpenApiClient(opts) as client:
 ```
 
 **Interfaces that need no key.** On a device with an `active` authorization, all 13
-request/response interfaces of section 4 need no key. The Lixel L2Pro has no `data_unpack`
-topic (it does not respond to it, with or without a key), so on a Lixel L2Pro the interfaces
-that work without a key are the other 12.
+request/response interfaces of section 4 other than `openapi_license` need no key. The Lixel
+L2Pro has no `data_unpack` topic (it does not respond to it, with or without a key), so on a
+Lixel L2Pro the interfaces that work without a key are the other 12. `openapi_license` (4.2)
+needs no key in any authorization state and is not metered.
 
 **Metering.** Only a recording started without a key is metered: a `modeling` request with
 `AC_START` that carries no key uses up recording minutes of the authorization, and a
@@ -144,7 +148,8 @@ uses 3 minutes). When the minutes run out, the device stops that recording throu
 stop procedure, so the data already recorded is saved as usual, and the authorization state of
 the device becomes `expired`. From then on a request without a key is answered with
 `openapi license exhausted`, while a request with a valid key still works. This SDK cannot
-grant or install an authorization; read the authorization state from the heartbeat.
+grant or install an authorization; read the authorization state from the heartbeat, and query the
+authorization code and the remaining minutes with `openapi_license` (4.2).
 
 **Upgrading from 1.x.** Programs written for 1.x need no change: a request with a valid key
 is handled exactly as in 1.x and is not metered. To go without a key, the device must already
@@ -250,9 +255,44 @@ The realtime point cloud `MqttCompressMsg` needs a second decompress/decode:
 | Query device info | REQ / RSP | request/device_info · response/device_info | DeviceInfoRequest / DeviceInfoResponse |
 | Device config | REQ / RSP | request·response/device_config | DeviceConfigRequest / DeviceConfigResponse (a proto comment mentions `report/device_config`, but no `DeviceConfigReport` message is defined and the device has no such topic; do not subscribe to it) |
 | Device control | REQ / RSP | request/device_control · response/device_control | DeviceControlRequest / DeviceControlResponse |
+| Query OpenAPI authorization | REQ / RSP | request/openapi_license · response/openapi_license | OpenapiLicenseRequest / OpenapiLicenseResponse |
 
 Device control supported `ActionCmd`: `AC_USB_MASS`, `AC_USB_ETHER`,
 `AC_DISK_FORMAT`, `AC_POWER_OFF`, `AC_SYSTEM_REBOOT`.
+
+**Query OpenAPI authorization (`openapi_license`).** This SDK uses `AC_GET_CONFIG` only: set
+`action` of the request to `AC_GET_CONFIG`, and the device returns the authorization state and
+the remaining recording minutes in `info` of the response.
+
+- No key is needed. The query works in all three states (`none`, `active`, `expired`) and also
+  when the device is not activated. It is not metered and uses no recording minutes.
+- Only a device whose heartbeat `Features` contains `"openapi_license"` has this topic; read the
+  heartbeat before you send the query (see 2.2). Any other device (earlier key-based scheme) does
+  not respond and the request times out.
+- This SDK cannot grant or install an authorization; this interface is read-only.
+
+Fields of `info`:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `licensed` | bool | `true` when the device has an authorization record (an expired one counts) |
+| `device_sn` | string | Serial number of the device the authorization is bound to; empty for `none` |
+| `code` | string | The authorization code bound to this device, returned as is; empty for `none` |
+| `granted_min` | sint64 | Total granted recording minutes; `-1` means a permanent authorization; 0 for `none` |
+| `used_min` | sint64 | Total used minutes; 0 for `none`. For a permanent authorization it is still the real total, not `-1` |
+| `remaining_min` | sint64 | Remaining minutes; `-1` means a permanent authorization; 0 for `none` |
+| `state` | string | `none`, `active` or `expired` |
+| `state_text` | string | State text in English: `Not authorized`, `Authorized`, `Expired` |
+
+For a limited authorization, `state` is `active` when `remaining_min` is 1 or more and `expired`
+otherwise; a permanent authorization is always `active`. `none` means the device currently has no
+usable authorization record. While a recording runs, `remaining_min` drops in real time (metering
+rules: see 2.2).
+
+Errors: `info` is present only when `error.code` is `EC_Success` (`success`). This SDK sends only
+`AC_GET_CONFIG`; an `action` value the device does not support (for example 0 or `AC_START`) returns
+`EC_RequestError` (`unsupported action`), and a request payload that cannot be parsed returns `EC_ProtoError` (`parse error`); neither response has `info`. For the full field
+list and examples see protocol reference 3.9.
 
 ### 4.3 Scan Mapping
 
@@ -538,7 +578,9 @@ can respond. Note that some requests are not answered while the device is in sta
 authorization answers a missing or wrong `openapi_key` with `EC_ProtoError`, so that is not a
 timeout: `desc` = `openapi auth error` for a device on the earlier key-based scheme or one
 that is not authorized, and `desc` = `openapi license exhausted` when the recording minutes of
-its authorization are used up. See section 2.2. `request()` defaults to a
+its authorization are used up. See section 2.2. `openapi_license` is the exception: a device
+whose heartbeat `Features` has no `"openapi_license"` has no such topic, so a request to it times
+out (see 4.2). `request()` defaults to a
 10 s timeout, adjustable via `--timeout` or `request_timeout`.
 
 **Q: Protobuf version error?**

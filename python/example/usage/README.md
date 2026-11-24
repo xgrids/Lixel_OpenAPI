@@ -50,6 +50,7 @@ Exit codes of `modeling.py`: `0` success, `1` timeout while starting or stopping
 - `device_info.py` -- query device info
 - `device_config.py` -- configure device time/storage
 - `device_control.py` -- device control (USB drive/Ethernet/power off/reboot, etc.)
+- `openapi_license.py` -- query the OpenAPI authorization state and remaining minutes
 
 ### Scan mapping
 - `modeling.py` -- start/stop scanning + subscribe to status. It waits for the device to be in standby, starts the scan, waits until the device is really scanning, watches the reports, stops the scan and waits for standby again

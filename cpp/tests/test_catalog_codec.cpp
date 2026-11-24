@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include <cstdint>
 #include <cstring>
 #include <set>
 #include <string>
@@ -18,7 +19,7 @@ TEST(Catalog, ListsEveryInterfaceOnce) {
   std::size_t n = 0;
   const ApiInterface* all = Interfaces(&n);
   ASSERT_NE(all, nullptr);
-  EXPECT_EQ(n, 18u);
+  EXPECT_EQ(n, 19u);
   std::set<std::string> keys;
   for (std::size_t i = 0; i < n; ++i) keys.insert(all[i].key);
   EXPECT_EQ(keys.size(), n) << "duplicate keys";
@@ -46,7 +47,7 @@ TEST(Catalog, CountsTopicsAndKnowsTheHeartbeatIsJson) {
     topics += all[i].report_topic != nullptr;
   }
   EXPECT_EQ(topics,
-            34);  // the Python catalog has 35: it lists report/device_config, the device has none
+            36);  // the Python catalog has 37: it lists report/device_config, the device has none
 
   const ApiInterface* hb = FindInterface("heartbeat");
   ASSERT_NE(hb, nullptr);
@@ -61,6 +62,20 @@ TEST(Catalog, DeviceConfigHasNoReportTopic) {
   EXPECT_NE(dc->response_topic, nullptr);
   EXPECT_EQ(dc->report_topic, nullptr);
   EXPECT_EQ(FindInterfaceByTopic("lixel/application/report/device_config"), nullptr);
+}
+
+TEST(Catalog, HasTheAuthorizationQuery) {
+  const ApiInterface* q = FindInterface("openapi_license");
+  ASSERT_NE(q, nullptr);
+  EXPECT_STREQ(q->request_topic, "lixel/application/request/openapi_license");
+  EXPECT_STREQ(q->response_topic, "lixel/application/response/openapi_license");
+  EXPECT_STREQ(q->request_message, "OpenapiLicenseRequest");
+  EXPECT_STREQ(q->response_message, "OpenapiLicenseResponse");
+  EXPECT_EQ(q->report_topic, nullptr);
+  EXPECT_EQ(FindInterfaceByTopic("lixel/application/request/openapi_license"), q);
+  EXPECT_EQ(FindInterfaceByTopic("lixel/application/response/openapi_license"), q);
+  EXPECT_STREQ(MessageForTopic("lixel/application/response/openapi_license"),
+               "OpenapiLicenseResponse");
 }
 
 TEST(Catalog, LooksUpByTopicAndKey) {
@@ -162,6 +177,131 @@ TEST(Codec, DefaultJsonShowsEveryFieldOfARequest) {
         << field << " missing in " << json;
   }
   EXPECT_EQ(DefaultJson("NoSuchMessage", &json).code, Errc::InvalidArgument);
+}
+
+namespace {
+std::string FromHex(const char* hex) {
+  std::string bytes;
+  for (size_t i = 0; hex[i] != '\0'; i += 2)
+    bytes.push_back(static_cast<char>(std::stoi(std::string(hex + i, 2), nullptr, 16)));
+  return bytes;
+}
+
+::openapi::aiot_msgs::OpenapiLicenseResponse MakeAuthorization(bool licensed, int64_t granted,
+                                                               int64_t used, int64_t remaining,
+                                                               const char* state,
+                                                               const char* state_text) {
+  ::openapi::aiot_msgs::OpenapiLicenseResponse rsp;
+  rsp.set_action(::openapi::aiot_msgs::Application::AC_GET_CONFIG);
+  auto* info = rsp.mutable_info();
+  info->set_licensed(licensed);
+  if (licensed) {
+    info->set_device_sn("FAKE-0001");
+    info->set_code("TEST-CODE-0001");
+  }
+  info->set_granted_min(granted);
+  info->set_used_min(used);
+  info->set_remaining_min(remaining);
+  info->set_state(state);
+  info->set_state_text(state_text);
+  rsp.mutable_error()->set_code(kSuccess);
+  rsp.mutable_error()->set_desc("success");
+  return rsp;
+}
+}  // namespace
+
+TEST(Codec, AuthorizationResponseKeepsTheValuesOfEveryState) {
+  struct Case {
+    const char* name;
+    ::openapi::aiot_msgs::OpenapiLicenseResponse rsp;
+    const char* granted;
+    const char* remaining;
+    const char* state;
+  };
+  const Case cases[] = {
+      {"none", MakeAuthorization(false, 0, 0, 0, "none", "Not authorized"), "0", "0", "none"},
+      {"limited", MakeAuthorization(true, 600, 125, 475, "active", "Authorized"), "600", "475",
+       "active"},
+      {"permanent", MakeAuthorization(true, -1, 125, -1, "active", "Authorized"), "-1", "-1",
+       "active"},
+      {"expired", MakeAuthorization(true, 600, 600, 0, "expired", "Expired"), "600", "0",
+       "expired"},
+  };
+  for (const Case& c : cases) {
+    SCOPED_TRACE(c.name);
+    // bytes round trip
+    ::openapi::aiot_msgs::OpenapiLicenseResponse parsed;
+    ASSERT_TRUE(parsed.ParseFromString(c.rsp.SerializeAsString()));
+    EXPECT_EQ(parsed.info().granted_min(), c.rsp.info().granted_min());
+    EXPECT_EQ(parsed.info().used_min(), c.rsp.info().used_min());
+    EXPECT_EQ(parsed.info().remaining_min(), c.rsp.info().remaining_min());
+    EXPECT_EQ(parsed.info().state(), c.state);
+    // JSON round trip: int64 values are strings, -1 stays -1
+    std::string json;
+    ASSERT_TRUE(MessageToJson(c.rsp, &json, false).ok());
+    EXPECT_NE(json.find(std::string("\"granted_min\":\"") + c.granted + "\""),
+              std::string::npos)
+        << json;
+    EXPECT_NE(json.find(std::string("\"remaining_min\":\"") + c.remaining + "\""),
+              std::string::npos)
+        << json;
+    ::openapi::aiot_msgs::OpenapiLicenseResponse again;
+    ASSERT_TRUE(JsonToMessage(json, &again).ok()) << json;
+    EXPECT_EQ(again.SerializeAsString(), c.rsp.SerializeAsString());
+  }
+  // none: the text fields stay empty and the number fields stay 0
+  const auto none = MakeAuthorization(false, 0, 0, 0, "none", "Not authorized");
+  EXPECT_FALSE(none.info().licensed());
+  EXPECT_TRUE(none.info().device_sn().empty());
+  EXPECT_TRUE(none.info().code().empty());
+}
+
+TEST(Codec, AuthorizationResponseMatchesTheDeviceWireFormat) {
+  // Encoded with protoc from the device-side proto: error 0x12040001 "success", action
+  // AC_GET_CONFIG, no header.
+  const struct {
+    const char* hex;
+    bool licensed;
+    int64_t granted, used, remaining;
+    const char* state;
+  } samples[] = {
+      {"10221a3a0801220946414b452d303030312a0e544553542d434f44452d3030303130b00938fa0140b6074a0661"
+       "6374697665520a417574686f72697a65647a0f088180909001120773756363657373",
+       true, 600, 125, 475, "active"},
+      {"10221a380801220946414b452d303030312a0e544553542d434f44452d30303031300138fa0140014a06616374"
+       "697665520a417574686f72697a65647a0f088180909001120773756363657373",
+       true, -1, 125, -1, "active"},
+      {"10221a350801220946414b452d303030312a0e544553542d434f44452d3030303130b00938b0094a0765787069"
+       "7265645207457870697265647a0f088180909001120773756363657373",
+       true, 600, 600, 0, "expired"},
+      {"10221a164a046e6f6e65520e4e6f7420617574686f72697a65647a0f088180909001120773756363657373",
+       false, 0, 0, 0, "none"},
+  };
+  for (const auto& sample : samples) {
+    SCOPED_TRACE(sample.state);
+    const std::string bytes = FromHex(sample.hex);
+    ::openapi::aiot_msgs::OpenapiLicenseResponse rsp;
+    ASSERT_TRUE(rsp.ParseFromString(bytes));
+    EXPECT_EQ(rsp.action(), ::openapi::aiot_msgs::Application::AC_GET_CONFIG);
+    EXPECT_EQ(rsp.info().licensed(), sample.licensed);
+    EXPECT_EQ(rsp.info().granted_min(), sample.granted);
+    EXPECT_EQ(rsp.info().used_min(), sample.used);
+    EXPECT_EQ(rsp.info().remaining_min(), sample.remaining);
+    EXPECT_EQ(rsp.info().state(), sample.state);
+    EXPECT_EQ(rsp.error().code(), kSuccess);
+    EXPECT_EQ(rsp.error().desc(), "success");
+    // our encoder produces the same bytes
+    EXPECT_EQ(rsp.SerializeAsString(), bytes);
+    // and the codec decodes them by message name
+    std::string json;
+    ASSERT_TRUE(DecodeToJson("OpenapiLicenseResponse", bytes, &json, false).ok());
+    EXPECT_NE(json.find(std::string("\"state\":\"") + sample.state + "\""), std::string::npos)
+        << json;
+  }
+  // the request is AC_GET_CONFIG = 34 in field 2
+  ::openapi::aiot_msgs::OpenapiLicenseRequest req;
+  req.set_action(::openapi::aiot_msgs::Application::AC_GET_CONFIG);
+  EXPECT_EQ(req.SerializeAsString(), FromHex("1022"));
 }
 
 TEST(Codes, SuccessAndStateValuesMatchTheDevice) {

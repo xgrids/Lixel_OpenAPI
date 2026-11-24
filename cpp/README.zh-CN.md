@@ -9,7 +9,7 @@
 > English version: [README.md](README.md)。
 
 ## 当前状态
-**已发布：2.0.0，仅支持 Linux。**客户端库和 18 个命令行示例已实现：MQTT/MQTTS 连接、请求/响应、订阅、JSON 转换、
+**已发布：2.0.0，仅支持 Linux。**客户端库和 19 个命令行示例已实现：MQTT/MQTTS 连接、请求/响应、订阅、JSON 转换、
 点云解码、扫描流程。目前没有 `install` 和 CMake 包导出，使用方式见下文的 `add_subdirectory`。
 
 已验证与未验证。下表是 1.1.x 时留下的记录。对 2.0.0 只重复了构建和完整的 `ctest`（包括现在也覆盖
@@ -19,7 +19,7 @@
 |--------|------|
 | 库逻辑，91 个用例 | 假传输层的单元测试（含压力测试），同时在 AddressSanitizer 下运行过 |
 | MQTT 层，明文与 TLS | 对临时启动的 Mosquitto broker 测试 |
-| 18 个示例 | 对由 Python 客户端一侧扮演的假设备做端到端测试，明文与 TLS，包含退出码与 Ctrl-C |
+| 19 个示例 | 对由 Python 客户端一侧扮演的假设备做端到端测试，明文与 TLS，包含退出码与 Ctrl-C |
 | 真机 | 一台 Lixel L2Pro：只读示例、一次完整扫描（期间解码 42 帧点云，无错误）、一次被中断的扫描 |
 
 | 未验证 | |
@@ -66,7 +66,7 @@ ctest --test-dir cpp/build --output-on-failure
 | `LIXEL_OPENAPI_PAHO_PROVIDER` | `FETCH`、`SYSTEM` | `FETCH` | `SYSTEM` 使用 `libpaho-mqtt-dev`，其版本与设备端不同，未经测试 |
 | `LIXEL_OPENAPI_SANITIZER` | 空、`address`、`thread`、`undefined` | 空 | 仅对本项目自己的目标启用 |
 | `LIXEL_OPENAPI_BUILD_TESTS` | `ON`、`OFF` | 作为顶层工程时为 `ON` | 是否构建测试 |
-| `LIXEL_OPENAPI_BUILD_EXAMPLES` | `ON`、`OFF` | 作为顶层工程时为 `ON` | 是否构建 18 个示例 |
+| `LIXEL_OPENAPI_BUILD_EXAMPLES` | `ON`、`OFF` | 作为顶层工程时为 `ON` | 是否构建 19 个示例 |
 | `LIXEL_E2E_PYTHON` | 路径 | 空 | 装有 `paho-mqtt`、`protobuf`、`grpcio-tools`、`lz4` 的 Python（`pip install -r python/requirements.txt lz4`）；设置后注册 `examples_e2e` 测试，它首次运行时会生成 Python 消息模块 |
 
 Ubuntu 22.04 自带 protobuf 3.12.4，用 `-DLIXEL_OPENAPI_PROTOBUF_PROVIDER=SYSTEM` 可以构建本项目（已验证），
@@ -109,7 +109,7 @@ lixel::openapi::Result r = client.Request("lixel/application/request/device_info
 | `scan.h` | `RunScan`：开始扫描、等设备真正在扫、停止、等回到待机 |
 | `pointcloud.h` | `DecodePointCloud`：`lio_pcl` 负载转为带缩放的点 |
 | `codec.h` | 按名字取消息，protobuf 与 JSON 互转 |
-| `catalog.h` | 18 个接口、34 个主题的表 |
+| `catalog.h` | 19 个接口、36 个主题的表 |
 | `codes.h`、`result.h` | 设备状态码，`Result` 与 `Errc` |
 
 与 Python 客户端有意不同的地方：
@@ -146,10 +146,10 @@ lixel::openapi::Result r = client.Request("lixel/application/request/device_info
 1 连不上或没有回答，2 选项错误（`modeling`：设备不在待机），3 设备回了错误码（回答照常打印），130 被中断。
 `modeling` 还有更多退出码，写在它的源码头部。
 
-18 个示例：`control_point`、`data_unpack`、`device_config`、`device_control`、`device_info`、
+19 个示例：`control_point`、`data_unpack`、`device_config`、`device_control`、`device_info`、
 `device_status`、`get_ntrip_profile`、`get_rtk_advance`、`heartbeat`、`lio_pcl`、`lio_pose`、
-`measure_point`、`modeling`、`modeling_status`、`project_list`、`set_ntrip_profile`、
-`set_rtk_advance`、`system_error`。其中 `device_control`、`device_config`、`set_ntrip_profile`、
+`measure_point`、`modeling`、`modeling_status`、`openapi_license`、`project_list`、
+`set_ntrip_profile`、`set_rtk_advance`、`system_error`。其中 `device_control`、`device_config`、`set_ntrip_profile`、
 `set_rtk_advance`、`control_point`、`measure_point` 会改动设备，`device_control` 可以关机或格式化磁盘。
 
 ## 测试
@@ -157,13 +157,13 @@ lixel::openapi::Result r = client.Request("lixel/application/request/device_info
 | 程序 | 用例数 | 覆盖内容 |
 |------|-------:|----------|
 | `test_smoke` | 7 | 构建链路，线上编码与 Python 客户端一致 |
-| `test_catalog_codec` | 13 | 接口表、JSON 转换、状态码 |
+| `test_catalog_codec` | 16 | 接口表、JSON 转换、状态码 |
 | `test_codec_standalone` | 2 | 不包含任何生成头文件的程序也能按名字找到消息 |
 | `test_client`、`test_client_stress` | 27、2 | 请求/响应、订阅、重连、线程安全 |
 | `test_pointcloud` | 16 | Python 一侧生成的帧、损坏和随机输入 |
 | `test_scan` | 24 | 对脚本化设备的扫描流程 |
-| `test_broker`（`broker_integration`） | 19 | MQTT 层对 Mosquitto，明文与 TLS |
-| `tests/e2e/run_examples.py`（`examples_e2e`） | 49 | 18 个示例对假设备 |
+| `test_broker`（`broker_integration`） | 23 | MQTT 层对 Mosquitto，明文与 TLS |
+| `tests/e2e/run_examples.py`（`examples_e2e`） | 56 | 19 个示例对假设备 |
 | `catalog_drift` | 1 | C++ 接口表与 Python 目录一致（`tools/catalog_tool.py check`） |
 
 ## 目录
@@ -174,7 +174,7 @@ cpp/
 ├── cmake/                     # 依赖解析、proto 生成、sanitizer
 ├── include/lixel/openapi/     # 公共头文件（命名空间 lixel::openapi）
 ├── src/
-├── examples/                  # 18 个命令行示例及其公共辅助代码
+├── examples/                  # 19 个命令行示例及其公共辅助代码
 ├── tools/catalog_tool.py      # 生成并检查接口表
 └── tests/                     # GoogleTest 测试；broker/ 与 e2e/ 放需要 broker 的脚本
 ```

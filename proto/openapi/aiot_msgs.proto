@@ -64,6 +64,7 @@ message Application {
         AC_MODIFY_PROJECT_LABELS = 24; // modify project labels
         AC_DELETE_PROJECTS = 25;       // delete projects
         AC_UDISK_FORMAT = 29;          // format external USB disk
+        AC_GET_CONFIG = 34;            // get configuration
     }
 }
 
@@ -748,5 +749,48 @@ message DataUnpackReport {
     Header header = 1;
     sint32 progress = 2; // unpack progress (0~100)
     Error error = 15;    // unpack status
+}
+/******************************************************************************
+ | type | topic                                          | payload
+ | REQ  | lixel/application/request/openapi_license      | OpenapiLicenseRequest
+ | RSP  | lixel/application/response/openapi_license     | OpenapiLicenseResponse
+ * notes:
+ * Query the OpenAPI authorization state of the device (no OpenAPI key needed)
+ * This SDK sends action AC_GET_CONFIG only; an action the device does not
+ * support returns EC_RequestError
+ * Only devices whose heartbeat Features contains "openapi_license" reply
+ * info is present only when action is AC_GET_CONFIG
+ * state and state_text values:
+ *   none    Not authorized
+ *   active  Authorized
+ *   expired Expired
+ * Possible OpenapiLicenseResponse error codes:
+ * EC_RequestSuccess,EC_RequestError,EC_ProtoError
+ * error.desc is a fixed English string:
+ *   EC_RequestSuccess success
+ *   EC_ProtoError     parse error
+ *   EC_RequestError   unsupported action
+ *****************************************************************************/
+message OpenapiLicenseRequest {
+    Header header = 1;
+    Application.ActionCmd action = 2; // AC_GET_CONFIG
+    string license = 3;               // not used by this SDK, leave empty
+}
+message OpenapiLicenseInfo {
+    reserved 2, 3;
+    bool licensed = 1;         // an authorization record exists (expired ones included)
+    string device_sn = 4;      // serial number of the device the authorization is bound to
+    string code = 5;           // authorization code bound to this device
+    sint64 granted_min = 6;    // total granted minutes, -1 for a permanent authorization
+    sint64 used_min = 7;       // total used minutes
+    sint64 remaining_min = 8;  // remaining minutes, -1 for a permanent authorization
+    string state = 9;          // none, active, expired
+    string state_text = 10;    // state text in English
+}
+message OpenapiLicenseResponse {
+    Header header = 1;                // session_id is the same as in the request
+    Application.ActionCmd action = 2; // the action of the request
+    OpenapiLicenseInfo info = 3;
+    Error error = 15;
 }
 // clang-format on

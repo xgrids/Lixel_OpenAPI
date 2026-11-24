@@ -153,11 +153,11 @@ Lixel 设备与 APP 之间的 BLE 网络配置流程如下：
 | `none`（固件支持授权，设备没有授权） | `error.code` 为 `EC_ProtoError`，`error.desc` 为 `openapi auth error`。 |
 | 早期 Key 方案（固件不支持授权） | `error.code` 为 `EC_ProtoError`，`error.desc` 为 `openapi auth error`，响应中不含业务数据。Key 由 XGRIDS 提供。 |
 
-开发指南第 4 节列出的 13 个请求/响应接口都按此处理，`device_info` 也不例外。Lixel L2Pro 没有 `data_unpack` 主题，带不带 Key 都没有响应。
+开发指南第 4 节列出的 13 个请求/响应接口（不含 `openapi_license`，它不检查 Key，见 3.9 节）都按此处理，`device_info` 也不例外。Lixel L2Pro 没有 `data_unpack` 主题，带不带 Key 都没有响应。
 
 如何判断设备属于哪一行：见 3.1 节心跳里的 `Features` 与 `OpenapiLicenseState` 字段。客户端有有效 Key 时可以一直发送，因为每一类设备都接受它；没有 Key 时就不发送。
 
-授权由 XGRIDS 授予，本 SDK 不能授予或安装授权，授权状态只从心跳读取（3.1 节）。只有不带 Key 的 `modeling` 请求（`AC_START`）开始的录制才会计量，规则见开发指南 2.2 节。
+授权由 XGRIDS 授予，本 SDK 不能授予或安装授权。授权状态从心跳读取（3.1 节），授权码和剩余分钟用 `openapi_license` 查询（3.9 节）。只有不带 Key 的 `modeling` 请求（`AC_START`）开始的录制才会计量，规则见开发指南 2.2 节。
 
 ```protobuf
 message Header {
@@ -425,6 +425,121 @@ message DataUnpackReport {
     Header header = 1;
     sint32 progress = 2; // Unpack progress (0~100)
     Error error = 15;    // Unpack status
+}
+```
+
+### 3.9 授权查询
+
+> ⚠️ **注意：** 只有心跳 `Features` 含 `"openapi_license"` 的设备有这个主题（见 3.1 节）。早期 Key 方案的设备不会响应，请求会超时，不是错误响应。
+
+本 SDK 只使用 `AC_GET_CONFIG`。这个主题不检查 `openapi_key`，不受 2.2 节的授权状态判定约束：`none`、`active`、`expired` 三种状态下都能查询，设备未激活时也能查询，带不带 Key、Key 对不对都一样。查询不计量。本 SDK 不能授予或安装授权。
+
+**授权查询请求（Openapi License Request）** —— QoS: 0；发布者：APP；订阅者：Lixel 设备
+Topic：`lixel/application/request/openapi_license`
+Payload：`openapi.aiot_msgs.OpenapiLicenseRequest`
+
+```protobuf
+message OpenapiLicenseRequest {
+    Header header = 1;
+    Application.ActionCmd action = 2; // AC_GET_CONFIG
+    string license = 3;               // not used by this SDK, leave empty
+}
+```
+
+`action` 必须是 `AC_GET_CONFIG`；`license` 本 SDK 不使用，留空。
+
+**授权查询响应（Openapi License Response）** —— QoS: 0；发布者：Lixel 设备；订阅者：APP
+Topic：`lixel/application/response/openapi_license`
+Payload：`openapi.aiot_msgs.OpenapiLicenseResponse`
+
+```protobuf
+message OpenapiLicenseInfo {
+    reserved 2, 3;
+    bool licensed = 1;         // an authorization record exists (expired ones included)
+    string device_sn = 4;      // serial number of the device the authorization is bound to
+    string code = 5;           // authorization code bound to this device
+    sint64 granted_min = 6;    // total granted minutes, -1 for a permanent authorization
+    sint64 used_min = 7;       // total used minutes
+    sint64 remaining_min = 8;  // remaining minutes, -1 for a permanent authorization
+    string state = 9;          // none, active, expired
+    string state_text = 10;    // state text in English
+}
+message OpenapiLicenseResponse {
+    Header header = 1;                // session_id is the same as in the request
+    Application.ActionCmd action = 2; // the action of the request
+    OpenapiLicenseInfo info = 3;
+    Error error = 15;
+}
+```
+
+响应的 `header` 复制请求的 `header`（`session_id` 与请求相同），`action` 回显请求值。`info` 只在 `action` 为 `AC_GET_CONFIG` 且 `error.code` 为 `EC_Success` 时出现。
+
+`info` 字段：
+
+| 字段 | 类型 | 单位 / 取值 | 说明 |
+|------|------|-------------|------|
+| `licensed` | bool | `true` / `false` | 设备有授权记录（含已过期的）时为 `true` |
+| `device_sn` | string | 序列号 | 授权绑定的设备序列号；`none` 时为空串 |
+| `code` | string | 授权码 | 绑定在这台设备上的授权码，响应原样返回；`none` 时为空串 |
+| `granted_min` | sint64 | 分钟 | 累计授予的录制分钟；`-1` 表示永久授权；`none` 时为 0 |
+| `used_min` | sint64 | 分钟 | 累计已用分钟；`none` 时为 0。永久授权的该字段仍是实际累计值，不是 `-1` |
+| `remaining_min` | sint64 | 分钟 | 剩余分钟；`-1` 表示永久授权；`none` 时为 0。录制中随计量实时减少 |
+| `state` | string | `none`、`active`、`expired` | 授权状态 |
+| `state_text` | string | 见下表 | 英文状态文字，可原样显示 |
+
+`state` 与 `state_text`：
+
+| `state` | `state_text` | 含义 | 分钟字段 |
+|---------|--------------|------|----------|
+| `none` | `Not authorized` | 设备当前没有可用的授权记录 | `device_sn`、`code` 为空串，`granted_min`、`used_min`、`remaining_min` 为 0 |
+| `active` | `Authorized` | 限时授权的 `remaining_min` 大于等于 1，或永久授权 | 永久授权时 `granted_min`、`remaining_min` 为 `-1` |
+| `expired` | `Expired` | 限时授权的 `remaining_min` 小于 1 | `remaining_min` 为 0 |
+
+错误：
+
+| `error.code` | `error.desc` | 条件 | `info` |
+|--------------|--------------|------|--------|
+| `EC_Success`（0x12040001） | `success` | `action` 为 `AC_GET_CONFIG` | 有 |
+| `EC_RequestError`（0x32040002） | `unsupported action` | `action` 是设备不支持的取值，例如 0、`AC_START`；本 SDK 只发送 `AC_GET_CONFIG` | 无 |
+| `EC_ProtoError`（0x32040001） | `parse error` | 请求载荷无法解析 | 无 |
+
+JSON 示例（`ProtoCodec` 的实际解码输出；sint64 在 JSON 里是字符串）。限时授权：
+
+```json
+{
+  "header": {"session_id": "s1", "seq": 0, "stamp": "0", "scaler": "0", "device_id": ""},
+  "action": "AC_GET_CONFIG",
+  "info": {
+    "licensed": true,
+    "device_sn": "FAKE-0001",
+    "code": "TEST-CODE-0001",
+    "granted_min": "600",
+    "used_min": "125",
+    "remaining_min": "475",
+    "state": "active",
+    "state_text": "Authorized"
+  },
+  "error": {"code": 302252033, "desc": "success"}
+}
+```
+
+永久授权：
+
+```json
+{
+  "header": {"session_id": "s1", "seq": 0, "stamp": "0", "scaler": "0", "device_id": ""},
+  "action": "AC_GET_CONFIG",
+  "info": {
+    "licensed": true,
+    "device_sn": "FAKE-0001",
+    "code": "TEST-CODE-0001",
+    "granted_min": "-1",
+    "used_min": "125",
+    "remaining_min": "-1",
+    "state": "active",
+    "state_text": "Authorized"
+  },
+  "error": {"code": 302252033, "desc": "success"}
 }
 ```
 
@@ -698,6 +813,7 @@ message Application {
         AC_MODIFY_PROJECT_LABELS = 24; // modify project labels
         AC_DELETE_PROJECTS = 25;       // delete projects
         AC_UDISK_FORMAT = 29;          // format external USB disk
+        AC_GET_CONFIG = 34;            // get configuration
     }
 }
 
@@ -1382,6 +1498,49 @@ message DataUnpackReport {
     Header header = 1;
     sint32 progress = 2; // unpack progress (0~100)
     Error error = 15;    // unpack status
+}
+/******************************************************************************
+ | type | topic                                          | payload
+ | REQ  | lixel/application/request/openapi_license      | OpenapiLicenseRequest
+ | RSP  | lixel/application/response/openapi_license     | OpenapiLicenseResponse
+ * notes:
+ * Query the OpenAPI authorization state of the device (no OpenAPI key needed)
+ * This SDK sends action AC_GET_CONFIG only; an action the device does not
+ * support returns EC_RequestError
+ * Only devices whose heartbeat Features contains "openapi_license" reply
+ * info is present only when action is AC_GET_CONFIG
+ * state and state_text values:
+ *   none    Not authorized
+ *   active  Authorized
+ *   expired Expired
+ * Possible OpenapiLicenseResponse error codes:
+ * EC_RequestSuccess,EC_RequestError,EC_ProtoError
+ * error.desc is a fixed English string:
+ *   EC_RequestSuccess success
+ *   EC_ProtoError     parse error
+ *   EC_RequestError   unsupported action
+ *****************************************************************************/
+message OpenapiLicenseRequest {
+    Header header = 1;
+    Application.ActionCmd action = 2; // AC_GET_CONFIG
+    string license = 3;               // not used by this SDK, leave empty
+}
+message OpenapiLicenseInfo {
+    reserved 2, 3;
+    bool licensed = 1;         // an authorization record exists (expired ones included)
+    string device_sn = 4;      // serial number of the device the authorization is bound to
+    string code = 5;           // authorization code bound to this device
+    sint64 granted_min = 6;    // total granted minutes, -1 for a permanent authorization
+    sint64 used_min = 7;       // total used minutes
+    sint64 remaining_min = 8;  // remaining minutes, -1 for a permanent authorization
+    string state = 9;          // none, active, expired
+    string state_text = 10;    // state text in English
+}
+message OpenapiLicenseResponse {
+    Header header = 1;                // session_id is the same as in the request
+    Application.ActionCmd action = 2; // the action of the request
+    OpenapiLicenseInfo info = 3;
+    Error error = 15;
 }
 // clang-format on
 ```

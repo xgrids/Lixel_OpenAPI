@@ -153,11 +153,11 @@ The BLE network-configuration flow between the Lixel device and the APP is as fo
 | `none` (the firmware supports authorization, the device has none) | `error.code` = `EC_ProtoError`, `error.desc` = `openapi auth error`. |
 | Earlier key-based scheme (the firmware does not support authorization) | `error.code` = `EC_ProtoError`, `error.desc` = `openapi auth error`, and no business data. The key is provided by XGRIDS. |
 
-The 13 request/response interfaces listed in section 4 of the developer guide, `device_info` included, behave this way. The Lixel L2Pro has no `data_unpack` topic; it does not respond to it, with or without a key.
+The 13 request/response interfaces listed in section 4 of the developer guide (not counting `openapi_license`, which does not check the key; see 3.9), `device_info` included, behave this way. The Lixel L2Pro has no `data_unpack` topic; it does not respond to it, with or without a key.
 
 How to tell which row applies to a device: see the `Features` and `OpenapiLicenseState` fields of the heartbeat in section 3.1. A client that has a valid key may always send it, because every kind of device accepts it; a client without a key sends none.
 
-The authorization is granted by XGRIDS; this SDK cannot grant or install it, and reads the authorization state only from the heartbeat (section 3.1). Only a recording started by a `modeling` request with `AC_START` that carries no key is metered; see section 2.2 of the developer guide for the rules.
+The authorization is granted by XGRIDS; this SDK cannot grant or install it, and reads the authorization state from the heartbeat (section 3.1); the authorization code and the remaining minutes are queried with `openapi_license` (section 3.9). Only a recording started by a `modeling` request with `AC_START` that carries no key is metered; see section 2.2 of the developer guide for the rules.
 
 ```protobuf
 message Header {
@@ -425,6 +425,121 @@ message DataUnpackReport {
     Header header = 1;
     sint32 progress = 2; // Unpack progress (0~100)
     Error error = 15;    // Unpack status
+}
+```
+
+### 3.9 Authorization Query
+
+> ⚠ **Note:** Only a device whose heartbeat `Features` contains `"openapi_license"` has this topic (see 3.1). A device on the earlier key-based scheme does not respond; the request times out instead of returning an error response.
+
+This SDK uses `AC_GET_CONFIG` only. The topic does not check `openapi_key` and is not bound by the authorization-state rules of 2.2: the query works in all three states (`none`, `active`, `expired`) and also when the device is not activated, with or without a key and whether or not the key is correct. The query is not metered. This SDK cannot grant or install an authorization.
+
+**Authorization query request (Openapi License Request)** — QoS: 0; Publisher: APP; Subscriber: Lixel Device
+Topic: `lixel/application/request/openapi_license`
+Payload: `openapi.aiot_msgs.OpenapiLicenseRequest`
+
+```protobuf
+message OpenapiLicenseRequest {
+    Header header = 1;
+    Application.ActionCmd action = 2; // AC_GET_CONFIG
+    string license = 3;               // not used by this SDK, leave empty
+}
+```
+
+`action` must be `AC_GET_CONFIG`; this SDK does not use `license`, leave it empty.
+
+**Authorization query response (Openapi License Response)** — QoS: 0; Publisher: Lixel Device; Subscriber: APP
+Topic: `lixel/application/response/openapi_license`
+Payload: `openapi.aiot_msgs.OpenapiLicenseResponse`
+
+```protobuf
+message OpenapiLicenseInfo {
+    reserved 2, 3;
+    bool licensed = 1;         // an authorization record exists (expired ones included)
+    string device_sn = 4;      // serial number of the device the authorization is bound to
+    string code = 5;           // authorization code bound to this device
+    sint64 granted_min = 6;    // total granted minutes, -1 for a permanent authorization
+    sint64 used_min = 7;       // total used minutes
+    sint64 remaining_min = 8;  // remaining minutes, -1 for a permanent authorization
+    string state = 9;          // none, active, expired
+    string state_text = 10;    // state text in English
+}
+message OpenapiLicenseResponse {
+    Header header = 1;                // session_id is the same as in the request
+    Application.ActionCmd action = 2; // the action of the request
+    OpenapiLicenseInfo info = 3;
+    Error error = 15;
+}
+```
+
+The `header` of the response is copied from the request (`session_id` is the same) and `action` echoes the request. `info` is present only when `action` is `AC_GET_CONFIG` and `error.code` is `EC_Success`.
+
+Fields of `info`:
+
+| Field | Type | Unit / values | Description |
+|-------|------|---------------|-------------|
+| `licensed` | bool | `true` / `false` | `true` when the device has an authorization record (an expired one counts) |
+| `device_sn` | string | serial number | Serial number of the device the authorization is bound to; empty for `none` |
+| `code` | string | authorization code | The authorization code bound to this device, returned as is; empty for `none` |
+| `granted_min` | sint64 | minutes | Total granted recording minutes; `-1` means a permanent authorization; 0 for `none` |
+| `used_min` | sint64 | minutes | Total used minutes; 0 for `none`. For a permanent authorization it is still the real total, not `-1` |
+| `remaining_min` | sint64 | minutes | Remaining minutes; `-1` means a permanent authorization; 0 for `none`. Drops in real time while a recording runs |
+| `state` | string | `none`, `active`, `expired` | Authorization state |
+| `state_text` | string | see below | State text in English, can be shown as is |
+
+`state` and `state_text`:
+
+| `state` | `state_text` | Meaning | Minute fields |
+|---------|--------------|---------|---------------|
+| `none` | `Not authorized` | The device currently has no usable authorization record | `device_sn` and `code` are empty strings; `granted_min`, `used_min` and `remaining_min` are 0 |
+| `active` | `Authorized` | A limited authorization with `remaining_min` of 1 or more, or a permanent authorization | `granted_min` and `remaining_min` are `-1` for a permanent authorization |
+| `expired` | `Expired` | A limited authorization with `remaining_min` below 1 | `remaining_min` is 0 |
+
+Errors:
+
+| `error.code` | `error.desc` | Condition | `info` |
+|--------------|--------------|-----------|--------|
+| `EC_Success` (0x12040001) | `success` | `action` is `AC_GET_CONFIG` | present |
+| `EC_RequestError` (0x32040002) | `unsupported action` | `action` is a value the device does not support, for example 0 or `AC_START`; this SDK sends only `AC_GET_CONFIG` | absent |
+| `EC_ProtoError` (0x32040001) | `parse error` | The request payload cannot be parsed | absent |
+
+JSON examples (actual decoded output of `ProtoCodec`; sint64 values are strings in JSON). A limited authorization:
+
+```json
+{
+  "header": {"session_id": "s1", "seq": 0, "stamp": "0", "scaler": "0", "device_id": ""},
+  "action": "AC_GET_CONFIG",
+  "info": {
+    "licensed": true,
+    "device_sn": "FAKE-0001",
+    "code": "TEST-CODE-0001",
+    "granted_min": "600",
+    "used_min": "125",
+    "remaining_min": "475",
+    "state": "active",
+    "state_text": "Authorized"
+  },
+  "error": {"code": 302252033, "desc": "success"}
+}
+```
+
+A permanent authorization:
+
+```json
+{
+  "header": {"session_id": "s1", "seq": 0, "stamp": "0", "scaler": "0", "device_id": ""},
+  "action": "AC_GET_CONFIG",
+  "info": {
+    "licensed": true,
+    "device_sn": "FAKE-0001",
+    "code": "TEST-CODE-0001",
+    "granted_min": "-1",
+    "used_min": "125",
+    "remaining_min": "-1",
+    "state": "active",
+    "state_text": "Authorized"
+  },
+  "error": {"code": 302252033, "desc": "success"}
 }
 ```
 
@@ -699,6 +814,7 @@ message Application {
         AC_MODIFY_PROJECT_LABELS = 24; // modify project labels
         AC_DELETE_PROJECTS = 25;       // delete projects
         AC_UDISK_FORMAT = 29;          // format external USB disk
+        AC_GET_CONFIG = 34;            // get configuration
     }
 }
 
@@ -1383,6 +1499,49 @@ message DataUnpackReport {
     Header header = 1;
     sint32 progress = 2; // unpack progress (0~100)
     Error error = 15;    // unpack status
+}
+/******************************************************************************
+ | type | topic                                          | payload
+ | REQ  | lixel/application/request/openapi_license      | OpenapiLicenseRequest
+ | RSP  | lixel/application/response/openapi_license     | OpenapiLicenseResponse
+ * notes:
+ * Query the OpenAPI authorization state of the device (no OpenAPI key needed)
+ * This SDK sends action AC_GET_CONFIG only; an action the device does not
+ * support returns EC_RequestError
+ * Only devices whose heartbeat Features contains "openapi_license" reply
+ * info is present only when action is AC_GET_CONFIG
+ * state and state_text values:
+ *   none    Not authorized
+ *   active  Authorized
+ *   expired Expired
+ * Possible OpenapiLicenseResponse error codes:
+ * EC_RequestSuccess,EC_RequestError,EC_ProtoError
+ * error.desc is a fixed English string:
+ *   EC_RequestSuccess success
+ *   EC_ProtoError     parse error
+ *   EC_RequestError   unsupported action
+ *****************************************************************************/
+message OpenapiLicenseRequest {
+    Header header = 1;
+    Application.ActionCmd action = 2; // AC_GET_CONFIG
+    string license = 3;               // not used by this SDK, leave empty
+}
+message OpenapiLicenseInfo {
+    reserved 2, 3;
+    bool licensed = 1;         // an authorization record exists (expired ones included)
+    string device_sn = 4;      // serial number of the device the authorization is bound to
+    string code = 5;           // authorization code bound to this device
+    sint64 granted_min = 6;    // total granted minutes, -1 for a permanent authorization
+    sint64 used_min = 7;       // total used minutes
+    sint64 remaining_min = 8;  // remaining minutes, -1 for a permanent authorization
+    string state = 9;          // none, active, expired
+    string state_text = 10;    // state text in English
+}
+message OpenapiLicenseResponse {
+    Header header = 1;                // session_id is the same as in the request
+    Application.ActionCmd action = 2; // the action of the request
+    OpenapiLicenseInfo info = 3;
+    Error error = 15;
 }
 // clang-format on
 ```

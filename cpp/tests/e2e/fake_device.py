@@ -15,6 +15,11 @@ What it does
       with --license none      it is answered with error 0x32040001 "openapi auth error"
       with --key only          (a device on the earlier key-based scheme) the same error as none
     --key and --license can be given together; one of them is required. Metering is not modelled.
+  - answers the authorization query (topic openapi_license) before the key check, with any key or
+    none, but only when --license is given; with --key only it stays silent, like a device
+    without that topic. AC_GET_CONFIG returns the state of --license in info (active: 600 minutes
+    granted, 125 used, 475 left; with --permanent granted and left are -1; expired: 600/600/0);
+    any other action returns error 0x32040002 "unsupported action" without info
   - reports device_status (modeling_state), heartbeat (JSON text), lio_pose, system_error and
     lio_pcl (LZ4 block in a MqttCompressMsg, 100 points) every 0.2 s; with --license the
     heartbeat carries Features, OpenapiLicenseState and OpenapiLicenseText, with --key only it
@@ -49,6 +54,7 @@ SUCCESS = 0x12040001
 AUTH_ERROR = 0x32040001
 REJECTED = 0x32040002
 READY, STARTING, SCANNING, STOPPING = 0x1204012C, 0x1204012D, 0x1204012E, 0x1204012F
+AC_GET_CONFIG = "AC_GET_CONFIG"
 LICENSE_TEXT = {"none": "Not authorized", "active": "Authorized", "expired": "Expired"}
 REQ = "lixel/application/request/"
 RSP = "lixel/application/response/"
@@ -112,6 +118,8 @@ class FakeDevice:
         self.log({"topic": name, "request": req})
         header = req.get("header", {})
         rsp = {"header": header, "error": {"code": SUCCESS, "desc": "success"}}
+        if name == "openapi_license":
+            return self.handle_license_query(req, rsp, response_message)
         refusal = self.refusal(header.get("openapi_key"))
         if refusal is not None:
             rsp["error"] = {"code": AUTH_ERROR, "desc": refusal}
@@ -125,6 +133,31 @@ class FakeDevice:
             threading.Timer(0.2, self.unpack_report, args=(50,)).start()
             threading.Timer(0.5, self.unpack_report, args=(100,)).start()
         self.send(RSP + name, response_message, rsp)
+
+    def handle_license_query(self, req, rsp, response_message):
+        """The authorization query needs no key. A device without --license has no such topic."""
+        if self.args.license is None:
+            return
+        rsp["action"] = req.get("action")
+        if req.get("action") == AC_GET_CONFIG:
+            rsp["info"] = self.license_info()
+        else:
+            rsp["error"] = {"code": REJECTED, "desc": "unsupported action"}
+        self.send(RSP + "openapi_license", response_message, rsp)
+
+    def license_info(self):
+        state = self.args.license
+        info = {"state": state, "state_text": LICENSE_TEXT[state]}
+        if state == "none":
+            return info
+        info.update({"licensed": True, "device_sn": "FAKE-0001", "code": "TEST-CODE-0001"})
+        if state == "expired":
+            info.update({"granted_min": 600, "used_min": 600, "remaining_min": 0})
+        elif self.args.permanent:
+            info.update({"granted_min": -1, "used_min": 125, "remaining_min": -1})
+        else:
+            info.update({"granted_min": 600, "used_min": 125, "remaining_min": 475})
+        return info
 
     def refusal(self, key):
         """Returns the error text when the request is refused, None when it is served."""
@@ -224,6 +257,8 @@ def main():
                                  "on the earlier key-based scheme")
     p.add_argument("--license", choices=["none", "active", "expired"],
                    help="behave like a device with this OpenAPI authorization state")
+    p.add_argument("--permanent", action="store_true",
+                   help="with --license active: a permanent authorization (-1 minutes)")
     p.add_argument("--log", required=True)
     p.add_argument("--ready-file", required=True)
     p.add_argument("--scenario", default="normal",
@@ -231,6 +266,8 @@ def main():
     args = p.parse_args()
     if args.key is None and args.license is None:
         p.error("give --key, --license, or both")
+    if args.permanent and args.license != "active":
+        p.error("--permanent needs --license active")
     FakeDevice(args).run()
 
 

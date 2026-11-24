@@ -6,6 +6,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <cstdint>
 #include <cstdlib>
 #include <future>
 #include <memory>
@@ -129,6 +130,86 @@ class FakeDevice {
   std::uint32_t code_;
   Scheme scheme_;
   std::atomic<int> requests_{0};
+};
+
+// What a LicenseDevice reports in its authorization query.
+enum class LicenseState { kNone, kLimited, kPermanent, kExpired };
+
+// A device simulator for the authorization query (openapi_license). The query needs no key, so it
+// is answered whatever the header holds. With `supported` false it does not subscribe at all, like
+// a device without that topic.
+class LicenseDevice {
+ public:
+  LicenseDevice(ClientOptions o, LicenseState state, bool supported = true)
+      : client_(std::move(o)), state_(state), supported_(supported) {}
+
+  Result Start() {
+    Result r = client_.Connect();
+    if (!r.ok() || !supported_) return r;
+    return client_.Subscribe(
+        "lixel/application/request/openapi_license",
+        [this](const std::string&, const std::string& payload) {
+          pbm::OpenapiLicenseRequest req;
+          if (!req.ParseFromString(payload)) return;
+          ++requests_;
+          keyed_ = req.header().has_openapi_key();
+          pbm::OpenapiLicenseResponse rsp;
+          rsp.mutable_header()->CopyFrom(req.header());
+          rsp.set_action(req.action());
+          if (req.action() == pbm::Application::AC_GET_CONFIG) {
+            Fill(rsp.mutable_info());
+            rsp.mutable_error()->set_code(kSuccess);
+            rsp.mutable_error()->set_desc("success");
+          } else {
+            rsp.mutable_error()->set_code(0x32040002u);
+            rsp.mutable_error()->set_desc("unsupported action");
+          }
+          client_.Publish("lixel/application/response/openapi_license", rsp);
+        });
+  }
+
+  int requests() const { return requests_; }
+  bool keyed() const { return keyed_; }
+
+ private:
+  void Fill(pbm::OpenapiLicenseInfo* info) const {
+    switch (state_) {
+      case LicenseState::kNone:
+        info->set_state("none");
+        info->set_state_text("Not authorized");
+        return;
+      case LicenseState::kLimited:
+        info->set_granted_min(600);
+        info->set_used_min(125);
+        info->set_remaining_min(475);
+        info->set_state("active");
+        info->set_state_text("Authorized");
+        break;
+      case LicenseState::kPermanent:
+        info->set_granted_min(-1);
+        info->set_used_min(125);
+        info->set_remaining_min(-1);
+        info->set_state("active");
+        info->set_state_text("Authorized");
+        break;
+      case LicenseState::kExpired:
+        info->set_granted_min(600);
+        info->set_used_min(600);
+        info->set_remaining_min(0);
+        info->set_state("expired");
+        info->set_state_text("Expired");
+        break;
+    }
+    info->set_licensed(true);
+    info->set_device_sn("SIM-0001");
+    info->set_code("TEST-CODE-0001");
+  }
+
+  Client client_;
+  LicenseState state_;
+  bool supported_;
+  std::atomic<int> requests_{0};
+  std::atomic<bool> keyed_{false};
 };
 
 }  // namespace
@@ -354,6 +435,113 @@ TEST(Broker, NoKeyOnADeviceWithoutAuthorizationGetsTheAuthError) {
   EXPECT_LT(std::chrono::steady_clock::now() - t0, milliseconds(1500))
       << "must answer at once, not time out";
 }
+// The authorization query is answered in every state without a key, with the values of that state.
+TEST(Broker, TheAuthorizationQueryNeedsNoKeyInAnyState) {
+  REQUIRE_BROKER();
+  struct Expect {
+    LicenseState state;
+    bool licensed;
+    std::int64_t granted, used, remaining;
+    const char* name;
+    const char* text;
+  };
+  const Expect all[] = {
+      {LicenseState::kNone, false, 0, 0, 0, "none", "Not authorized"},
+      {LicenseState::kLimited, true, 600, 125, 475, "active", "Authorized"},
+      {LicenseState::kPermanent, true, -1, 125, -1, "active", "Authorized"},
+      {LicenseState::kExpired, true, 600, 600, 0, "expired", "Expired"},
+  };
+  for (const Expect& e : all) {
+    SCOPED_TRACE(e.name);
+    LicenseDevice device(Plain(), e.state);
+    ASSERT_TRUE(device.Start().ok());
+    Client c(Plain());  // no openapi_key
+    ASSERT_TRUE(c.Connect().ok());
+    pbm::OpenapiLicenseRequest req;
+    req.set_action(pbm::Application::AC_GET_CONFIG);
+    pbm::OpenapiLicenseResponse rsp;
+    Result r = c.Request("lixel/application/request/openapi_license", req,
+                         "lixel/application/response/openapi_license", &rsp);
+    ASSERT_TRUE(r.ok()) << ErrcName(r.code) << ": " << r.desc;
+    EXPECT_FALSE(device.keyed()) << "the client must not invent a key";
+    EXPECT_EQ(rsp.action(), pbm::Application::AC_GET_CONFIG);
+    EXPECT_EQ(rsp.info().licensed(), e.licensed);
+    EXPECT_EQ(rsp.info().granted_min(), e.granted);
+    EXPECT_EQ(rsp.info().used_min(), e.used);
+    EXPECT_EQ(rsp.info().remaining_min(), e.remaining);
+    EXPECT_EQ(rsp.info().state(), e.name);
+    EXPECT_EQ(rsp.info().state_text(), e.text);
+    EXPECT_EQ(rsp.info().device_sn(), e.licensed ? "SIM-0001" : "");
+    EXPECT_EQ(rsp.info().code(), e.licensed ? "TEST-CODE-0001" : "");
+    EXPECT_EQ(rsp.error().desc(), "success");
+  }
+}
+
+// A wrong key is not looked at by this query.
+TEST(Broker, AWrongKeyIsHarmlessInTheAuthorizationQuery) {
+  REQUIRE_BROKER();
+  LicenseDevice device(Plain(), LicenseState::kLimited);
+  ASSERT_TRUE(device.Start().ok());
+  ClientOptions o = Plain();
+  o.openapi_key = "wrong-key";
+  Client c(o);
+  ASSERT_TRUE(c.Connect().ok());
+  pbm::OpenapiLicenseRequest req;
+  req.set_action(pbm::Application::AC_GET_CONFIG);
+  pbm::OpenapiLicenseResponse rsp;
+  Result r = c.Request("lixel/application/request/openapi_license", req,
+                       "lixel/application/response/openapi_license", &rsp);
+  ASSERT_TRUE(r.ok()) << ErrcName(r.code) << ": " << r.desc;
+  EXPECT_TRUE(device.keyed());
+  EXPECT_EQ(rsp.info().remaining_min(), 475);
+}
+
+// Any action but AC_GET_CONFIG is a device error answered at once, not a timeout, and the
+// response has no info.
+TEST(Broker, AnUnsupportedActionInTheAuthorizationQueryIsADeviceError) {
+  REQUIRE_BROKER();
+  LicenseDevice device(Plain(), LicenseState::kLimited);
+  ASSERT_TRUE(device.Start().ok());
+  Client c(Plain());
+  ASSERT_TRUE(c.Connect().ok());
+  for (auto action : {pbm::Application::AC_START, pbm::Application::AC_UNKNOW}) {
+    SCOPED_TRACE(action);
+    pbm::OpenapiLicenseRequest req;
+    req.set_action(action);
+    pbm::OpenapiLicenseResponse rsp;
+    const auto t0 = std::chrono::steady_clock::now();
+    Result r = c.Request("lixel/application/request/openapi_license", req,
+                         "lixel/application/response/openapi_license", &rsp);
+    EXPECT_EQ(r.code, Errc::DeviceError);
+    EXPECT_EQ(r.device_code, 0x32040002u);
+    EXPECT_EQ(r.desc, "unsupported action");
+    EXPECT_FALSE(rsp.has_info());
+    EXPECT_LT(std::chrono::steady_clock::now() - t0, milliseconds(1500))
+        << "must answer at once, not time out";
+  }
+}
+
+// A device without the topic (the earlier key scheme) never answers: a timeout, and the client
+// stays connected and usable.
+TEST(Broker, TheAuthorizationQueryTimesOutOnADeviceWithoutThatTopic) {
+  REQUIRE_BROKER();
+  LicenseDevice device(Plain(), LicenseState::kLimited, /*supported=*/false);
+  ASSERT_TRUE(device.Start().ok());
+  ClientOptions o = Plain();
+  o.request_timeout = milliseconds(300);
+  Client c(o);
+  ASSERT_TRUE(c.Connect().ok());
+  pbm::OpenapiLicenseRequest req;
+  req.set_action(pbm::Application::AC_GET_CONFIG);
+  pbm::OpenapiLicenseResponse rsp;
+  EXPECT_EQ(c.Request("lixel/application/request/openapi_license", req,
+                      "lixel/application/response/openapi_license", &rsp)
+                .code,
+            Errc::RequestTimeout);
+  EXPECT_EQ(device.requests(), 0);
+  EXPECT_TRUE(c.IsConnected());
+}
+
 TEST(Broker, NoDeviceMeansATimeoutAndTheClientKeepsWorking) {
   REQUIRE_BROKER();
   ClientOptions o = Plain();

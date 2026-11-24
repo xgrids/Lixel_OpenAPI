@@ -92,8 +92,9 @@ lixel/<domain>/<type>/<name>
 | 支持授权但未授权（`none`） | `EC_ProtoError`，`desc` 为 `openapi auth error` | 正常 |
 | 早期 Key 方案（心跳里没有 `Features`） | `EC_ProtoError`，`desc` 为 `openapi auth error` | 正常 |
 
-Key 错误与不带 Key 等同。以上每种 `EC_ProtoError` 情况下，设备都会返回该错误，而不是保持沉默，所以
-这不是超时。
+Key 错误与不带 Key 等同。对受 Key 检查的 13 个请求/响应接口，以上每种 `EC_ProtoError` 情况下，设备
+都会返回该错误，而不是保持沉默，所以这不是超时。`openapi_license`（4.2 节）不在其内：它不检查 Key；
+心跳 `Features` 里没有 `"openapi_license"` 的设备没有这个主题，不会响应，请求会超时。
 
 **怎么判断设备属于哪一种？** 看心跳（`lixel/application/report/heartbeat`）。`Features` 里含
 `"openapi_license"`，表示固件支持 OpenAPI 授权，此时 `OpenapiLicenseState` 为 `none`、`active` 或
@@ -119,15 +120,17 @@ with OpenApiClient(opts) as client:
     ...  # header.openapi_key 会被自动填充
 ```
 
-**免 Key 的接口。** 在授权状态为 `active` 的设备上，第 4 节的 13 个请求/响应接口都不需要 Key。
-Lixel L2Pro 没有 `data_unpack` 主题（带不带 Key 都没有响应），所以在 L2Pro 上免 Key 可用的是其余
-12 个接口。
+**免 Key 的接口。** 在授权状态为 `active` 的设备上，第 4 节中除 `openapi_license` 之外的 13 个
+请求/响应接口都不需要 Key。Lixel L2Pro 没有 `data_unpack` 主题（带不带 Key 都没有响应），所以在
+L2Pro 上免 Key 可用的是其余 12 个接口。`openapi_license`（4.2 节）在任何授权状态下都不需要 Key，
+也不计量。
 
 **计量。** 只有不带 Key 发起的录制才会计量：不带 Key 的 `modeling` 请求（`AC_START`）开始的录制，
 会消耗授权的录制分钟；带有效 Key 开始的录制不消耗。每满 60 秒消耗 1 分钟，录制结束时不足 60 秒的
 部分再消耗 1 分钟（150 秒的录制消耗 3 分钟）。分钟用完时，设备按正常停止流程停止这次录制，已录制的
 数据照常保存，授权状态随即变为 `expired`。此后不带 Key 的请求会返回 `openapi license exhausted`，带有效
-Key 的请求仍然可用。本 SDK 不能授予或安装授权；授权状态从心跳读取。
+Key 的请求仍然可用。本 SDK 不能授予或安装授权；授权状态可从心跳读取，授权码和剩余分钟用
+`openapi_license` 查询（4.2 节）。
 
 **从 1.x 升级。** 为 1.x 编写的程序无需修改：带有效 Key 的请求与 1.x 的处理完全相同，也不计量。要
 免 Key，设备必须已经获得 OpenAPI 授权，然后不再传 Key 即可（去掉 `openapi_key=` / `--key`）。
@@ -228,9 +231,40 @@ template = codec.default_json("ModelingRequest")
 | 查询设备信息 | REQ / RSP | request/device_info · response/device_info | DeviceInfoRequest / DeviceInfoResponse |
 | 设备参数配置 | REQ / RSP | request·response/device_config | DeviceConfigRequest / DeviceConfigResponse（proto 注释提到 `report/device_config`，但没有定义 `DeviceConfigReport` 消息，设备端也没有这个 topic，不要订阅） |
 | 设备控制 | REQ / RSP | request/device_control · response/device_control | DeviceControlRequest / DeviceControlResponse |
+| 查询 OpenAPI 授权 | REQ / RSP | request/openapi_license · response/openapi_license | OpenapiLicenseRequest / OpenapiLicenseResponse |
 
 设备控制支持的 `ActionCmd`：`AC_USB_MASS`、`AC_USB_ETHER`、`AC_DISK_FORMAT`、
 `AC_POWER_OFF`、`AC_SYSTEM_REBOOT`。
+
+**查询 OpenAPI 授权（`openapi_license`）。** 本 SDK 只使用 `AC_GET_CONFIG`：把请求里的 `action`
+设为 `AC_GET_CONFIG`，设备在响应的 `info` 里返回授权状态和剩余录制分钟。
+
+- 不需要 Key。`none`、`active`、`expired` 三种状态下都能查，设备未激活时也能查；查询不计量，
+  不消耗录制分钟。
+- 只有心跳 `Features` 含 `"openapi_license"` 的设备有这个主题，发查询前先看心跳（见 2.2 节）。其他
+  设备（早期 Key 方案）不会响应，请求会超时。
+- 本 SDK 不能授予或安装授权，这个接口只读。
+
+`info` 的字段：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `licensed` | bool | 设备有授权记录（含已过期的）时为 `true` |
+| `device_sn` | string | 授权绑定的设备序列号；`none` 时为空串 |
+| `code` | string | 绑定在这台设备上的授权码，响应原样返回；`none` 时为空串 |
+| `granted_min` | sint64 | 累计授予的录制分钟；`-1` 表示永久授权；`none` 时为 0 |
+| `used_min` | sint64 | 累计已用分钟；`none` 时为 0。永久授权的该字段仍是实际累计值，不是 `-1` |
+| `remaining_min` | sint64 | 剩余分钟；`-1` 表示永久授权；`none` 时为 0 |
+| `state` | string | `none`、`active`、`expired` |
+| `state_text` | string | 英文状态文字：`Not authorized`、`Authorized`、`Expired` |
+
+限时授权的 `remaining_min` 大于等于 1 时 `state` 为 `active`，否则为 `expired`；永久授权恒为
+`active`。`none` 表示设备当前没有可用的授权记录。录制中 `remaining_min` 随计量实时减少（计量规则见
+2.2 节）。
+
+错误：`error.code` 为 `EC_Success`（`success`）时才有 `info`。本 SDK 只发送 `AC_GET_CONFIG`；
+设备不支持的 `action` 取值（例如 0、`AC_START`）返回 `EC_RequestError`（`unsupported action`），请求载荷无法解析时返回 `EC_ProtoError`（`parse error`），
+这两种响应都没有 `info`。完整字段、示例见协议参考 3.9 节。
 
 ### 4.3 扫描建图
 
@@ -482,6 +516,7 @@ xpanel/openapi_xpanel/i18n/openapi_<lang>.qm
 
 **Q：请求无响应/超时？**
 确认请求 topic 与消息类型匹配、设备处于可响应状态。注意：部分请求在设备待机时不会被回复（如 `modeling_status`、`control_point`）。没有有效 OpenAPI 授权的设备在 `openapi_key` 缺失或不正确时会返回 `EC_ProtoError`，不属于超时：早期 Key 方案的设备和未授权的设备，`desc` 为 `openapi auth error`；授权的录制分钟已用完时，`desc` 为 `openapi license exhausted`。见 2.2 节。
+`openapi_license` 例外：心跳 `Features` 里没有 `"openapi_license"` 的设备没有这个主题，对它的请求会超时（见 4.2 节）。
 `request()` 默认 10s 超时，可用 `--timeout` 或 `request_timeout` 调整。
 
 **Q：protobuf 版本报错？**

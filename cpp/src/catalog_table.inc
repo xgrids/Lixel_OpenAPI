@@ -14,6 +14,7 @@ LIXEL_API("system_error", nullptr, nullptr, nullptr, nullptr, "lixel/application
 LIXEL_API("device_info", "lixel/application/request/device_info", "DeviceInfoRequest", "lixel/application/response/device_info", "DeviceInfoResponse", nullptr, nullptr)
 LIXEL_API("device_config", "lixel/application/request/device_config", "DeviceConfigRequest", "lixel/application/response/device_config", "DeviceConfigResponse", nullptr, nullptr)
 LIXEL_API("device_control", "lixel/application/request/device_control", "DeviceControlRequest", "lixel/application/response/device_control", "DeviceControlResponse", nullptr, nullptr)
+LIXEL_API("openapi_license", "lixel/application/request/openapi_license", "OpenapiLicenseRequest", "lixel/application/response/openapi_license", "OpenapiLicenseResponse", nullptr, nullptr)
 LIXEL_API("modeling", "lixel/application/request/modeling", "ModelingRequest", "lixel/application/response/modeling", "ModelingResponse", "lixel/application/report/modeling", "ModelingReport")
 LIXEL_API("modeling_status", "lixel/application/request/modeling_status", "ModelingStatusRequest", "lixel/application/response/modeling_status", "ModelingStatusResponse", nullptr, nullptr)
 LIXEL_API("control_point", "lixel/application/request/control_point", "ControlPointRequest", "lixel/application/response/control_point", "ControlPointResponse", "lixel/application/report/control_point", "ControlPointReport")

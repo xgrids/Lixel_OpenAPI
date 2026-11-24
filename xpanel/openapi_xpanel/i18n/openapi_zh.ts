@@ -231,6 +231,18 @@
         <translation>支持的 ActionCmd：AC_USB_MASS, AC_USB_ETHER, AC_DISK_FORMAT, AC_POWER_OFF, AC_SYSTEM_REBOOT。</translation>
     </message>
     <message>
+        <source>Query OpenAPI authorization</source>
+        <translation>查询 OpenAPI 授权</translation>
+    </message>
+    <message>
+        <source>Query the OpenAPI authorization state, the authorization code and the remaining recording minutes. No OpenAPI key is needed. Only devices whose heartbeat Features contains &quot;openapi_license&quot; reply; other devices do not reply and the request times out.</source>
+        <translation>查询 OpenAPI 授权状态、授权码和剩余录制分钟。不需要 OpenAPI Key。只有心跳 Features 含 &quot;openapi_license&quot; 的设备才会应答，其它设备不应答，请求会超时。</translation>
+    </message>
+    <message>
+        <source>Set action to AC_GET_CONFIG, the only action this SDK sends; an action the device does not support returns EC_RequestError (unsupported action). state is none, active or expired. granted_min and remaining_min are -1 for a permanent authorization. This SDK cannot grant or install an authorization.</source>
+        <translation>将 action 设为 AC_GET_CONFIG，这是本 SDK 发送的唯一取值；设备不支持的 action 返回 EC_RequestError（unsupported action）。state 为 none、active 或 expired。永久授权时 granted_min 与 remaining_min 为 -1。本 SDK 不能授予或安装授权。</translation>
+    </message>
+    <message>
         <source>Scan control</source>
         <translation>扫描控制</translation>
     </message>

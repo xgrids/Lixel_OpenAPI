@@ -9,7 +9,7 @@ Both use the **same MQTT topics and the same protobuf definition**
 > 中文版见 [README.zh-CN.md](README.zh-CN.md)。
 
 ## Status
-**Released: 2.0.0, Linux only.** The client library and the 18 command line examples are implemented:
+**Released: 2.0.0, Linux only.** The client library and the 19 command line examples are implemented:
 connect over MQTT or MQTTS, request/response, subscriptions, JSON conversion, point cloud
 decoding and the scan flow. There is no `install` or CMake package export yet: use it with
 `add_subdirectory` (see below).
@@ -23,7 +23,7 @@ AddressSanitizer run and the real device test have not.
 |----------|-----|
 | Library logic, 91 cases | unit tests with a fake transport, including a stress test, also run under AddressSanitizer |
 | MQTT layer, plain and TLS | tests against a throw-away Mosquitto broker |
-| The 18 examples | end-to-end tests against a fake device played by the Python client side, plain and TLS, including exit codes and Ctrl-C |
+| The 19 examples | end-to-end tests against a fake device played by the Python client side, plain and TLS, including exit codes and Ctrl-C |
 | A real device | one Lixel L2Pro: read-only examples, a full scan during which 42 point cloud frames were decoded without error, and an interrupted scan |
 
 | Not verified | |
@@ -73,7 +73,7 @@ the tested machine (Ubuntu 22.04).
 | `LIXEL_OPENAPI_PAHO_PROVIDER` | `FETCH`, `SYSTEM` | `FETCH` | `SYSTEM` uses `libpaho-mqtt-dev`; its version differs from the one the device builds against and is not tested |
 | `LIXEL_OPENAPI_SANITIZER` | empty, `address`, `thread`, `undefined` | empty | sanitizer for this project's own targets |
 | `LIXEL_OPENAPI_BUILD_TESTS` | `ON`, `OFF` | `ON` when this is the top-level project | build the tests |
-| `LIXEL_OPENAPI_BUILD_EXAMPLES` | `ON`, `OFF` | `ON` when this is the top-level project | build the 18 examples |
+| `LIXEL_OPENAPI_BUILD_EXAMPLES` | `ON`, `OFF` | `ON` when this is the top-level project | build the 19 examples |
 | `LIXEL_E2E_PYTHON` | path | empty | a Python with `paho-mqtt`, `protobuf`, `grpcio-tools` and `lz4` (`pip install -r python/requirements.txt lz4`); when set, the `examples_e2e` test is registered. It generates the Python message module on its first run |
 
 Ubuntu 22.04 ships protobuf 3.12.4. It can build this project with
@@ -118,7 +118,7 @@ lixel::openapi::Result r = client.Request("lixel/application/request/device_info
 | `scan.h` | `RunScan`: start a scan, wait until the device scans, stop it, wait for standby |
 | `pointcloud.h` | `DecodePointCloud`: the `lio_pcl` payload to scaled points |
 | `codec.h` | message by name, protobuf to and from JSON |
-| `catalog.h` | the table of 18 interfaces and their 34 topics |
+| `catalog.h` | the table of 19 interfaces and their 36 topics |
 | `codes.h`, `result.h` | device status codes, `Result` and `Errc` |
 
 How it differs from the Python client, on purpose:
@@ -164,10 +164,10 @@ Common options: `--host` (default `192.168.55.1`), `--port`, `--tls`, `--usernam
 (`modeling`: the device was not in standby), 3 the device answered with an error code (the answer is
 printed anyway), 130 interrupted. `modeling` has more exit codes, listed in its source header.
 
-The 18 examples: `control_point`, `data_unpack`, `device_config`, `device_control`, `device_info`,
+The 19 examples: `control_point`, `data_unpack`, `device_config`, `device_control`, `device_info`,
 `device_status`, `get_ntrip_profile`, `get_rtk_advance`, `heartbeat`, `lio_pcl`, `lio_pose`,
-`measure_point`, `modeling`, `modeling_status`, `project_list`, `set_ntrip_profile`,
-`set_rtk_advance`, `system_error`. `device_control`, `device_config`, `set_ntrip_profile`,
+`measure_point`, `modeling`, `modeling_status`, `openapi_license`, `project_list`,
+`set_ntrip_profile`, `set_rtk_advance`, `system_error`. `device_control`, `device_config`, `set_ntrip_profile`,
 `set_rtk_advance`, `control_point` and `measure_point` change the device; `device_control` can power
 it off or format the disk.
 
@@ -176,13 +176,13 @@ it off or format the disk.
 | Program | Cases | What it covers |
 |---------|------:|----------------|
 | `test_smoke` | 7 | build pipeline, wire format against the Python client |
-| `test_catalog_codec` | 13 | interface table, JSON conversion, status codes |
+| `test_catalog_codec` | 16 | interface table, JSON conversion, status codes |
 | `test_codec_standalone` | 2 | finding messages by name in a program that includes no generated header |
 | `test_client`, `test_client_stress` | 27, 2 | request/response, subscriptions, reconnect, thread safety |
 | `test_pointcloud` | 16 | frames made by the Python side, damaged and random input |
 | `test_scan` | 24 | the scan flow against a scripted device |
-| `test_broker` (as `broker_integration`) | 19 | the MQTT layer against Mosquitto, plain and TLS |
-| `tests/e2e/run_examples.py` (as `examples_e2e`) | 49 | the 18 examples against a fake device |
+| `test_broker` (as `broker_integration`) | 23 | the MQTT layer against Mosquitto, plain and TLS |
+| `tests/e2e/run_examples.py` (as `examples_e2e`) | 56 | the 19 examples against a fake device |
 | `catalog_drift` | 1 | the C++ table equals the Python catalog (`tools/catalog_tool.py check`) |
 
 ## Layout
@@ -193,7 +193,7 @@ cpp/
 ├── cmake/                     # dependency resolution, proto generation, sanitizers
 ├── include/lixel/openapi/     # public headers (namespace lixel::openapi)
 ├── src/
-├── examples/                  # the 18 command line examples and their shared helpers
+├── examples/                  # the 19 command line examples and their shared helpers
 ├── tools/catalog_tool.py      # generates and checks the interface table
 └── tests/                     # GoogleTest tests; broker/ and e2e/ hold the scripts that need a broker
 ```

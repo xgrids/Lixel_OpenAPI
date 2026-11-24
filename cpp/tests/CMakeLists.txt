@@ -75,7 +75,7 @@ else()
   message(STATUS "mosquitto, mosquitto_passwd, openssl or Python 3 not found: broker_integration is not registered")
 endif()
 
-# End to end: the 18 examples against a fake device played by the Python client side of this
+# End to end: the 19 examples against a fake device played by the Python client side of this
 # repository. Needs a Python that has paho-mqtt, protobuf, grpcio-tools and lz4 (pip install -r
 # python/requirements.txt lz4); give it with -DLIXEL_E2E_PYTHON=/path/to/python. The Python
 # protobuf module is generated on the first run if it is missing. Without it the

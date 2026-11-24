@@ -20,6 +20,7 @@ set(LIXEL_EXAMPLE_NAMES
   measure_point
   modeling
   modeling_status
+  openapi_license
   project_list
   set_ntrip_profile
   set_rtk_advance

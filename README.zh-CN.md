@@ -9,7 +9,7 @@
 Lixel_OpenAPI/
 ├── python/     Python：示例脚本与可复用客户端库
 ├── xpanel/     OpenAPI-XPanel 图形界面（仅 Linux）
-├── cpp/        C++：   客户端库与 18 个示例
+├── cpp/        C++：   客户端库与 19 个示例
 ├── proto/      共用：  两种方式都使用的 protobuf 定义
 └── docs/       共用：  开发者指南与协议参考
 ```
@@ -18,7 +18,7 @@ Lixel_OpenAPI/
 
 | | **[Python](python/README.zh-CN.md)** | **[C++](cpp/README.zh-CN.md)** |
 |---|---|---|
-| 提供内容 | 18 个示例脚本、可复用客户端库 | 客户端库，以及同样的 18 个示例（命令行程序） |
+| 提供内容 | 19 个示例脚本、可复用客户端库 | 客户端库，以及同样的 19 个示例（命令行程序） |
 | 平台 | Linux | Linux |
 | 状态 | 已发布：2.0.0 | 已发布：2.0.0（验证情况见其 README） |
 | 从这里开始 | [python/README.zh-CN.md](python/README.zh-CN.md) | [cpp/README.zh-CN.md](cpp/README.zh-CN.md) |
@@ -43,6 +43,8 @@ Ubuntu 20.04 / 22.04 / 24.04（x86_64）上，并把 Python 客户端库作为�
 发送 Key。未授权或授权已用完的设备，会以 `EC_ProtoError` 拒绝没有有效 Key 的请求。仍使用早期 Key 方案的
 设备行为与 1.x 相同。有效 Key 在每一类设备上都可用，所以同一个程序可以同时面对这几类设备：只对需要 Key
 的设备设置 Key。为 1.x 编写的程序无需修改。线格式没有变化（`Header.openapi_key` 仍是第 6 号字段）。
+
+支持的设备可以用 `openapi_license` 查询授权状态和剩余录制分钟（开发指南 4.2 节）。
 
 授权由 XGRIDS 授予，本 SDK 不能授予授权。详见开发指南 2.2 节
 （[English](docs/lixel_openapi_developer_guide_en.md)、[中文](docs/lixel_openapi_developer_guide_zh.md)）。

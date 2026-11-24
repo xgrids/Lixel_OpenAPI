@@ -9,7 +9,7 @@ MQTT with protobuf messages. Use it from **Python** or from **C++**.
 Lixel_OpenAPI/
 ├── python/     Python: example scripts and a reusable client library
 ├── xpanel/     OpenAPI-XPanel GUI (Linux only)
-├── cpp/        C++:    client library and 18 examples
+├── cpp/        C++:    client library and 19 examples
 ├── proto/      Shared: the protobuf definition both of them use
 └── docs/       Shared: developer guide and protocol reference
 ```
@@ -18,7 +18,7 @@ Lixel_OpenAPI/
 
 | | **[Python](python/README.md)** | **[C++](cpp/README.md)** |
 |---|---|---|
-| What you get | 18 example scripts, a reusable client library | A client library and the same 18 examples as command line programs |
+| What you get | 19 example scripts, a reusable client library | A client library and the same 19 examples as command line programs |
 | Platforms | Linux | Linux |
 | Status | Released: 2.0.0 | Released: 2.0.0 (what has been verified is listed in its README) |
 | Start here | [python/README.md](python/README.md) | [cpp/README.md](cpp/README.md) |
@@ -48,6 +48,9 @@ device that is still on the earlier key-based scheme works as in 1.x. A valid ke
 kind of device, so the same program can talk to all of them: set the key only for a device that
 needs it. Programs written for 1.x need no change. The wire format is unchanged
 (`Header.openapi_key` keeps field number 6).
+
+A device that supports it can be asked for its authorization state and its remaining recording minutes
+with `openapi_license` (section 4.2 of the developer guide).
 
 The authorization is granted by XGRIDS; this SDK cannot grant it. See section 2.2 of the developer
 guide ([English](docs/lixel_openapi_developer_guide_en.md), [中文](docs/lixel_openapi_developer_guide_zh.md)).

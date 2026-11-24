@@ -16,7 +16,7 @@ repository overview is in [../README.md](../README.md).
 - **Reusable core** — a Qt-independent OpenAPI/MQTT client and protobuf codec
 - MQTT / MQTTS (TLS) connection to the device
 - Protobuf message encode/decode with JSON templates
-- 18 ready-to-run interface example scripts
+- 19 ready-to-run interface example scripts
 - Installable from the checkout with `pip install -e python`
 
 ## Directory structure
@@ -29,7 +29,7 @@ python/
 │   │   ├── api_catalog.py   # Interface catalog (topics, messages, metadata)
 │   │   ├── openapi_client.py# MQTT client with request/response support
 │   │   └── proto_codec.py   # Protobuf <-> JSON codec
-│   └── usage/               # 18 per-interface example scripts
+│   └── usage/               # 19 per-interface example scripts
 ├── src/                     # Internal support
 │   ├── generate_proto.py    # Generates src/proto_gen from ../proto/
 │   └── proto_gen/           # Generated protobuf modules (do not edit)
