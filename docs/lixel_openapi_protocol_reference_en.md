@@ -236,6 +236,8 @@ message DeviceStatusReport {
 
 Note — `modeling_state` enum: `EC_UnknownState`, `EC_ScanReady`, `EC_ScanStarting`, `EC_ScanModeling`, `EC_ScanStopping`, `EC_ScanStopped`, `EC_ScanMappingAbort`, `EC_ScanNotAllowedInUsbMass`, `EC_ScanProjectTransferring`.
 
+Note — `init_ready` tells whether SLAM is ready for the current scan; it does not mean the device needs to be initialized. After an `AC_START` the device sets it to `true` once SLAM has started, and sets it back to `false` when the scan stops. A device in standby therefore always reports `false`. This is the normal value: the OpenAPI has no separate initialization step and needs none.
+
 ### 3.3 Device Information Retrieval
 
 **Device Info Request** — QoS: 0; Publisher: APP; Subscriber: Lixel Device
@@ -260,6 +262,8 @@ message DeviceInfoResponse {
     Error error = 15;
 }
 ```
+
+Note — not every device fills every sub-message of `DeviceInfo`; for example, some devices do not return `storage_info`. A sub-message that is not filled is absent from the decoded JSON. Clients should treat it as "not provided", not as an error. The USB disk read/write state is available in `udisk_info.rw_enable`.
 
 ### 3.4 Device Configuration
 

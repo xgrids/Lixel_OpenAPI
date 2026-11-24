@@ -236,6 +236,8 @@ message DeviceStatusReport {
 
 说明 —— `modeling_state` 枚举：`EC_UnknownState`、`EC_ScanReady`、`EC_ScanStarting`、`EC_ScanModeling`、`EC_ScanStopping`、`EC_ScanStopped`、`EC_ScanMappingAbort`、`EC_ScanNotAllowedInUsbMass`、`EC_ScanProjectTransferring`。
 
+说明 —— `init_ready` 表示本次扫描的 SLAM 是否已就绪，不表示设备需要初始化。设备收到 `AC_START` 后，等 SLAM 启动完成才置为 `true`；停止扫描后回到 `false`。所以设备待机时这个字段始终为 `false`，这是正常值，OpenAPI 没有、也不需要单独的初始化操作。
+
 ### 3.3 设备信息获取
 
 **设备信息请求（Device Info Request）** —— QoS: 0；发布者：APP；订阅者：Lixel 设备
@@ -260,6 +262,8 @@ message DeviceInfoResponse {
     Error error = 15;
 }
 ```
+
+说明 —— 并非所有设备都会填写 `DeviceInfo` 的每个子消息，例如部分设备不返回 `storage_info`。没有填写的子消息不会出现在解码后的 JSON 里，客户端应把它当作"未提供"处理，不能当成错误。U 盘读写状态可从 `udisk_info.rw_enable` 读取。
 
 ### 3.4 设备配置
 
