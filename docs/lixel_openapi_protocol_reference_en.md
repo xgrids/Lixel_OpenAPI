@@ -507,7 +507,7 @@ The file access feature (Samba) is disabled by default. It must be enabled throu
 
 ### HTTP access
 
-Besides Samba, the URLs returned in `ProjectInfo.*_url` (`ProjectListResponse`) and `ModelingStatusResponse.*_url` are HTTP addresses of the form `http://<host>/static/<project directory>/...`. On a Lixel L2Pro (firmware V3.2.1) the returned `<host>` was measured as `192.168.56.1`, which is not reachable over the wired connection; replacing the host with `192.168.55.1` works. Clients should replace the host part of the URL with the address used for the MQTT connection.
+Besides Samba, the URLs returned in `ProjectInfo.*_url` (`ProjectListResponse`) and `ModelingStatusResponse.*_url` are HTTP addresses of the form `http://<host>/static/<project directory>/...`. On a Lixel L2Pro the returned `<host>` was measured as `192.168.56.1`, which is not reachable over the wired connection; replacing the host with `192.168.55.1` works. Clients should replace the host part of the URL with the address used for the MQTT connection.
 
 ## 8. Error Code Definition
 

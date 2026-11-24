@@ -24,7 +24,7 @@ AddressSanitizer run and the real device test have not.
 | Library logic, 91 cases | unit tests with a fake transport, including a stress test, also run under AddressSanitizer |
 | MQTT layer, plain and TLS | tests against a throw-away Mosquitto broker |
 | The 18 examples | end-to-end tests against a fake device played by the Python client side, plain and TLS, including exit codes and Ctrl-C |
-| A real device | one Lixel L2Pro (firmware V3.2.1): read-only examples, a full scan during which 42 point cloud frames were decoded without error, and an interrupted scan |
+| A real device | one Lixel L2Pro: read-only examples, a full scan during which 42 point cloud frames were decoded without error, and an interrupted scan |
 
 | Not verified | |
 |--------------|---|
