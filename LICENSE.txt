@@ -2,7 +2,7 @@ XGRIDS SDK 软件开发工具包许可协议
 XGRIDS SDK License Agreement
 
 许可方：深圳市其域创新科技股份有限公司（XGRIDS，以下简称"许可方"）
-生效日期：[YYYY-MM-DD]
+生效日期：2026-10-01
 
 Copyright (c) 2026 深圳市其域创新科技股份有限公司 (XGRIDS). All rights reserved.
 
